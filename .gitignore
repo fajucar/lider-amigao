@@ -1,0 +1,21 @@
+node_modules
+dist
+.env
+.env.local
+.env.*.local
+
+# arquivos legados, não usados pelo app React atual
+scratch
+portaria-hv.html
+
+# arquivos soltos de anotação/segredo que não devem ir pro repositório
+*.pem
+*.key
+segredo*.txt
+credenciais*.txt
+
+# editor / SO
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db

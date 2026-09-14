@@ -1,0 +1,11 @@
+{
+  "name": "Lider Amigão - Assistente de Portaria",
+  "short_name": "Lider Amigão",
+  "description": "Assistente digital para líderes de portaria.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "orientation": "portrait-primary"
+}
