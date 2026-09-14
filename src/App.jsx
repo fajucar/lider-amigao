@@ -1510,35 +1510,66 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex justify-center">
-    <div className="w-full max-w-md min-h-screen bg-slate-950 text-slate-100 flex flex-col relative sm:border-x sm:border-slate-800" style={{ fontFamily: "ui-sans-serif, system-ui, sans-serif" }}>
+    <div className="w-full max-w-md md:max-w-[1200px] min-h-screen bg-slate-950 text-slate-100 flex flex-col relative sm:border-x sm:border-slate-800 md:border-x-0" style={{ fontFamily: "ui-sans-serif, system-ui, sans-serif" }}>
       {/* Cabeçalho */}
-      <header className="px-4 pt-5 pb-4 border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950 sticky top-0 z-10">
+      <header className="px-4 md:px-8 pt-5 md:pt-6 pb-4 md:pb-5 border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-950 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-lg bg-amber-400/15 border border-amber-400/30 flex items-center justify-center">
-              <span className="text-amber-400 text-lg">🛡️</span>
+            <div className="h-9 w-9 md:h-10 md:w-10 rounded-lg bg-amber-400/15 border border-amber-400/30 flex items-center justify-center">
+              <span className="text-amber-400 text-lg md:text-xl">🛡️</span>
             </div>
             <div>
-              <h1 className="text-[15px] font-semibold leading-tight tracking-tight">Lider Amigão</h1>
-              <p className="text-[11px] text-slate-400 leading-tight">HV Serv · Líder de turno · Groq: {chamadasGroq}</p>
+              <h1 className="text-[15px] md:text-lg font-semibold leading-tight tracking-tight">Lider Amigão</h1>
+              <p className="text-[11px] md:text-xs text-slate-400 leading-tight">HV Serv · Líder de turno · Groq: {chamadasGroq}</p>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-amber-400 font-semibold text-lg leading-none tabular-nums">
+            <div className="text-amber-400 font-semibold text-lg md:text-xl leading-none tabular-nums">
               {relogio.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
             </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
+            <div className="text-[10px] md:text-xs text-slate-500 mt-0.5">
               {relogio.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
             </div>
           </div>
         </div>
       </header>
 
+      {/* Navegação: barra inferior fixa no mobile, vira barra horizontal fixa no topo (abaixo do
+          cabeçalho) a partir de 768px — mesmos botões, mesmo estado, só reposicionados. */}
+      <nav className="fixed bottom-0 inset-x-0 mx-auto max-w-md sm:border-x sm:border-slate-800 bg-slate-900/95 backdrop-blur border-t border-slate-800 grid grid-cols-6 z-10 md:static md:max-w-none md:mx-0 md:border-x-0 md:border-t-0 md:border-b">
+        {[
+          { id: "rotinas", label: "Rotinas", icon: "🏨" },
+          { id: "consultar", label: "Consultar", icon: "💬" },
+          { id: "ocorrencias", label: "Ocorrências", icon: "📋", badge: ocorrenciasHoje.length },
+          { id: "equipe", label: "Equipe", icon: "👥" },
+          { id: "turno", label: "Relatório", icon: "📝" },
+          { id: "regras", label: "Regras", icon: "📖" },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setAba(t.id)}
+            className={
+              "flex flex-col items-center py-2.5 gap-0.5 relative md:flex-row md:justify-center md:gap-2 md:py-3 md:rounded-lg md:mx-1 md:my-1 " +
+              (aba === t.id ? "text-amber-400 md:bg-amber-400/10" : "text-slate-500 md:hover:bg-slate-800/60")
+            }
+          >
+            <span className="text-base md:text-lg leading-none">{t.icon}</span>
+            <span className="text-[9px] md:text-[13px] font-medium leading-tight">{t.label}</span>
+            {t.badge > 0 && (
+              <span className="absolute top-1.5 right-1/2 translate-x-4 md:static md:translate-x-0 md:top-auto md:right-auto bg-amber-400 text-slate-900 text-[9px] font-bold rounded-full h-4 min-w-4 px-1 flex items-center justify-center">
+                {t.badge}
+              </span>
+            )}
+            {aba === t.id && <span className="absolute top-0 h-0.5 w-8 bg-amber-400 rounded-full" />}
+          </button>
+        ))}
+      </nav>
+
       {/* Conteúdo */}
       <main className="flex-1 overflow-y-auto pb-24">
         {aba === "consultar" && (
           <div className="flex flex-col h-full">
-            <div className="px-4 py-3 pb-8 space-y-3">
+            <div className="px-4 md:px-8 py-3 md:py-6 pb-8 space-y-3 md:max-w-2xl md:mx-auto">
               {chat.length === 0 && (
                 <div className="mt-6 text-center px-4">
                   <div className="text-4xl mb-3">💬</div>
@@ -1593,10 +1624,10 @@ export default function App() {
         )}
 
         {aba === "ocorrencias" && (
-          <div className="px-4 py-4">
+          <div className="px-4 md:px-8 py-4 md:py-6">
             <div className="mb-4">
               <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">{fmtDataLonga(hojeISO())}</p>
-              <h2 className="text-base font-semibold">Ocorrências do turno</h2>
+              <h2 className="text-base md:text-lg font-semibold">Ocorrências do turno</h2>
             </div>
 
             {/* Nova ocorrência */}
@@ -1635,7 +1666,7 @@ export default function App() {
             {ocorrenciasHoje.length === 0 ? (
               <div className="text-center py-10 text-slate-600 text-sm">Nenhuma ocorrência registrada hoje.</div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:items-start md:gap-3 lg:grid-cols-3">
                 {ocorrenciasHoje.map((o) => {
                   const c = catInfo(o.categoria);
                   return (
@@ -1664,15 +1695,17 @@ export default function App() {
         )}
 
         {aba === "turno" && (
-          <div className="px-4 py-4">
+          <div className="px-4 md:px-8 py-4 md:py-6">
             <div className="mb-4">
               <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Fim de turno</p>
-              <h2 className="text-base font-semibold">Relatório de turno</h2>
+              <h2 className="text-base md:text-lg font-semibold">Relatório de turno</h2>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 Gera o relatório com as ocorrências do dia, pronto pra registrar ou enviar por e-mail.
               </p>
             </div>
 
+            {/* No desktop, forma e relatório gerado ficam lado a lado quando há relatório pra mostrar. */}
+            <div className={emailGerado ? "md:grid md:grid-cols-2 md:gap-4 md:items-start" : ""}>
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 mb-3 space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <input
@@ -1734,14 +1767,15 @@ export default function App() {
                 </button>
               </div>
             )}
+            </div>
           </div>
         )}
 
         {aba === "regras" && (
-          <div className="px-4 py-4">
+          <div className="px-4 md:px-8 py-4 md:py-6">
             <div className="mb-4">
               <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Base de consulta</p>
-              <h2 className="text-base font-semibold">Regulamento interno</h2>
+              <h2 className="text-base md:text-lg font-semibold">Regulamento interno</h2>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 Suba o PDF do regulamento do condomínio. A IA lê o arquivo e extrai as normas. O assistente usa isso para responder o que pode ou não pode.
               </p>
@@ -1811,7 +1845,7 @@ export default function App() {
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-[13px] text-slate-100 placeholder-slate-600 focus:outline-none focus:border-amber-400/50"
                 />
                 {buscaRegulamento.trim() && (
-                  <div className="mt-3 space-y-2">
+                  <div className="mt-3 space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:items-start md:gap-2">
                     {resultadosBuscaRegulamento.length === 0 ? (
                       <p className="text-[12px] text-slate-500 text-center py-3">
                         Nenhum trecho encontrado para "{buscaRegulamento.trim()}". Tente outra palavra.
@@ -1843,10 +1877,10 @@ export default function App() {
         )}
 
         {aba === "rotinas" && (
-          <div className="px-4 py-4">
+          <div className="px-4 md:px-8 py-4 md:py-6">
             <div className="mb-4">
               <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Nativ Tatuapé Garden</p>
-              <h2 className="text-base font-semibold">Rotinas do condomínio</h2>
+              <h2 className="text-base md:text-lg font-semibold">Rotinas do condomínio</h2>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 Procedimentos da ronda diurna (07h–19h). Toque num bloco para abrir.
               </p>
@@ -1866,7 +1900,7 @@ export default function App() {
             </div>
 
             {/* Blocos de procedimentos (accordion) */}
-            <div className="space-y-2">
+            <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:items-start md:gap-3 lg:grid-cols-3">
               {ROTINAS.map((sec) => {
                 const aberto = rotinaAberta === sec.id;
                 return (
@@ -1919,10 +1953,10 @@ export default function App() {
         )}
 
         {aba === "equipe" && (
-          <div className="px-4 py-4">
+          <div className="px-4 md:px-8 py-4 md:py-6">
             <div className="mb-4">
               <p className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Plantões e rendições</p>
-              <h2 className="text-base font-semibold">Equipe</h2>
+              <h2 className="text-base md:text-lg font-semibold">Equipe</h2>
             </div>
 
             {/* Postos e horários — sempre visível */}
@@ -2000,7 +2034,7 @@ export default function App() {
                 {colaboradores.length === 0 ? (
                   <div className="text-center py-10 text-slate-600 text-sm">Nenhum colaborador cadastrado.</div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:items-start md:gap-3 lg:grid-cols-3">
                     {colaboradores.map((c) => {
                       const p = postoEquipeInfo(c.posto);
                       const nAtrasos = registrosEquipe.filter(
@@ -2124,7 +2158,7 @@ export default function App() {
                     {registrosEquipeFiltrados.length === 0 ? (
                       <div className="text-center py-10 text-slate-600 text-sm">Nenhum registro ainda.</div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:items-start md:gap-3 lg:grid-cols-3">
                         {registrosEquipeFiltrados.map((r) => {
                           const t = tipoRegistroInfo(r.tipo);
                           const colab = colaboradores.find((c) => String(c.id) === String(r.colaboradorId));
@@ -2204,7 +2238,7 @@ export default function App() {
       )}
 
       {/* Barra Flutuante de Voz (Modo Ronda Viva-Voz) */}
-      <div className="fixed bottom-14 inset-x-0 mx-auto max-w-md sm:border-x sm:border-slate-800 z-20 bg-slate-900/95 backdrop-blur border-t border-slate-800 px-3 py-2">
+      <div className="fixed bottom-14 md:bottom-0 inset-x-0 mx-auto max-w-md md:max-w-[1200px] sm:border-x sm:border-slate-800 md:border-x-0 z-20 bg-slate-900/95 backdrop-blur border-t border-slate-800 px-3 md:px-8 py-2 md:py-3">
         {erroVoz && (
           <p className="text-[11px] text-red-400 mb-1.5 text-center leading-snug">{erroVoz}</p>
         )}
@@ -2349,33 +2383,6 @@ export default function App() {
         )}
         {aba === "consultar" && fotoErro && <p className="mt-1 text-[11px] text-red-400 text-center">{fotoErro}</p>}
       </div>
-
-      {/* Navegação inferior */}
-      <nav className="fixed bottom-0 inset-x-0 mx-auto max-w-md sm:border-x sm:border-slate-800 bg-slate-900/95 backdrop-blur border-t border-slate-800 grid grid-cols-6 z-10">
-        {[
-          { id: "rotinas", label: "Rotinas", icon: "🏨" },
-          { id: "consultar", label: "Consultar", icon: "💬" },
-          { id: "ocorrencias", label: "Ocorrências", icon: "📋", badge: ocorrenciasHoje.length },
-          { id: "equipe", label: "Equipe", icon: "👥" },
-          { id: "turno", label: "Relatório", icon: "📝" },
-          { id: "regras", label: "Regras", icon: "📖" },
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setAba(t.id)}
-            className={"flex flex-col items-center py-2.5 gap-0.5 relative " + (aba === t.id ? "text-amber-400" : "text-slate-500")}
-          >
-            <span className="text-base leading-none">{t.icon}</span>
-            <span className="text-[9px] font-medium leading-tight">{t.label}</span>
-            {t.badge > 0 && (
-              <span className="absolute top-1.5 right-1/2 translate-x-4 bg-amber-400 text-slate-900 text-[9px] font-bold rounded-full h-4 min-w-4 px-1 flex items-center justify-center">
-                {t.badge}
-              </span>
-            )}
-            {aba === t.id && <span className="absolute top-0 h-0.5 w-8 bg-amber-400 rounded-full" />}
-          </button>
-        ))}
-      </nav>
     </div>
     </div>
   );
