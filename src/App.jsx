@@ -996,6 +996,124 @@ function RotinaCard({ sec, cor, aberto, concluida, onToggleAberto, onToggleConcl
   );
 }
 
+// Formulário de registro de ocorrência (botões de local + descrição + foto + registrar).
+// Fica num componente à parte (nível de módulo, não dentro de App) porque é usado em dois
+// lugares: no topo da tela inicial (Turno) e na aba Ocorrências — declarar de novo dentro de
+// App a cada render trocaria a identidade do componente e faria o campo de texto perder o
+// foco a cada letra digitada.
+function FormularioOcorrencia({
+  cor,
+  tema,
+  novoLocal,
+  setNovoLocal,
+  novoLocalCustom,
+  setNovoLocalCustom,
+  novaOc,
+  setNovaOc,
+  fotoOcorrenciaCameraRef,
+  fotoOcorrenciaGaleriaRef,
+  selecionarFotoOcorrenciaManual,
+  fotoOcorrenciaManualPreview,
+  limparFotoOcorrenciaManual,
+  fotoOcorrenciaManualErro,
+  registrarOcorrenciaManual,
+  registrandoOcorrenciaManual,
+}) {
+  return (
+    <div style={{ borderRadius: 26, padding: 16, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
+      <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario, marginBottom: 8 }}>Local</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {LOCAIS.map((l) => {
+          const ativo = novoLocal === l.id;
+          const bc = corBadgeLocal(l.id, tema);
+          return (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => setNovoLocal(l.id)}
+              style={{
+                fontSize: 12, padding: "7px 14px", borderRadius: 999, border: "1px solid transparent",
+                background: ativo ? bc.bg : "transparent", color: ativo ? bc.texto : cor.textoSecundario,
+                borderColor: ativo ? "transparent" : cor.cartaoBorda, fontWeight: ativo ? 700 : 400,
+              }}
+            >
+              {l.label}
+            </button>
+          );
+        })}
+      </div>
+      {novoLocal === "outros" && (
+        <input
+          type="text"
+          value={novoLocalCustom}
+          onChange={(e) => setNovoLocalCustom(e.target.value)}
+          placeholder="Qual local? Ex.: Barrilete, apto 42..."
+          style={{ width: "100%", marginTop: 8, background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, borderRadius: 14, padding: "10px 14px", fontSize: 13, color: cor.textoPrincipal }}
+        />
+      )}
+
+      <textarea
+        value={novaOc}
+        onChange={(e) => setNovaOc(e.target.value)}
+        placeholder="Descreva a ocorrência..."
+        rows={2}
+        style={{ width: "100%", marginTop: 12, background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, borderRadius: 14, padding: "10px 14px", fontSize: 14, color: cor.textoPrincipal, resize: "none" }}
+      />
+
+      <input
+        ref={fotoOcorrenciaCameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={(e) => selecionarFotoOcorrenciaManual(e.target.files?.[0])}
+        className="hidden"
+      />
+      <input
+        ref={fotoOcorrenciaGaleriaRef}
+        type="file"
+        accept="image/*"
+        onChange={(e) => selecionarFotoOcorrenciaManual(e.target.files?.[0])}
+        className="hidden"
+      />
+      {fotoOcorrenciaManualPreview ? (
+        <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, borderRadius: 14, border: `1px solid ${cor.inputBorda}`, background: cor.inputBg, padding: 8 }}>
+          <img src={fotoOcorrenciaManualPreview} alt="Prévia da foto" style={{ height: 48, width: 48, borderRadius: 10, objectFit: "cover" }} />
+          <span style={{ fontSize: 12, color: cor.textoSecundario, flex: 1 }}>Foto anexada</span>
+          <button type="button" onClick={limparFotoOcorrenciaManual} style={{ color: cor.textoSecundario, display: "flex" }} title="Remover foto">
+            <Icone nome="x" tamanho={15} />
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+          <button
+            type="button"
+            onClick={() => fotoOcorrenciaCameraRef.current?.click()}
+            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "9px 0", borderRadius: 12, background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, color: cor.textoSecundario }}
+          >
+            <Icone nome="camera" tamanho={15} /> Tirar foto
+          </button>
+          <button
+            type="button"
+            onClick={() => fotoOcorrenciaGaleriaRef.current?.click()}
+            style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "9px 0", borderRadius: 12, background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, color: cor.textoSecundario }}
+          >
+            <Icone nome="upload" tamanho={15} /> Galeria
+          </button>
+        </div>
+      )}
+      {fotoOcorrenciaManualErro && <p style={{ fontSize: 11, color: "#FCA5A5", marginTop: 6 }}>{fotoOcorrenciaManualErro}</p>}
+
+      <button
+        onClick={registrarOcorrenciaManual}
+        disabled={!novaOc.trim() || registrandoOcorrenciaManual}
+        style={{ width: "100%", marginTop: 12, background: "#22C55E", color: "#052E16", fontWeight: 700, fontSize: 14, borderRadius: 999, padding: "13px 0", opacity: novaOc.trim() && !registrandoOcorrenciaManual ? 1 : 0.4, boxShadow: novaOc.trim() ? "0 0 20px rgba(34,197,94,.35)" : "none" }}
+      >
+        {registrandoOcorrenciaManual ? "Registrando..." : "Registrar com horário atual"}
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   const [aba, setAba] = useState("turno");
   const [tema, setTema] = useState("dark");
@@ -1033,7 +1151,6 @@ export default function App() {
   const fileRefConvencao = useRef(null);
   const [ocorrencias, setOcorrencias] = useState([]);
   const [carregado, setCarregado] = useState(false);
-  const [relogio, setRelogio] = useState(new Date());
 
   // Chat
   const [chat, setChat] = useState([]);
@@ -1203,12 +1320,6 @@ export default function App() {
       }
       setCarregado(true);
     })();
-  }, []);
-
-  // Relógio
-  useEffect(() => {
-    const t = setInterval(() => setRelogio(new Date()), 1000 * 20);
-    return () => clearInterval(t);
   }, []);
 
   useEffect(() => {
@@ -2067,11 +2178,6 @@ export default function App() {
   const rotinasFeitas = rotinasConcluidas.length;
   const rotinasTotal = ROTINAS.length;
   const progressoRotinas = rotinasTotal ? Math.round((rotinasFeitas / rotinasTotal) * 100) : 0;
-  const proximaRotina = ROTINAS.find((r) => !rotinasConcluidas.includes(r.id));
-  const TURNO_DURACAO_HORAS = 12;
-  const minutosTurno = turnoInicio ? Math.max(0, Math.floor((relogio.getTime() - new Date(turnoInicio).getTime()) / 60000)) : 0;
-  const fracaoTurno = Math.max(0, Math.min(1, minutosTurno / (TURNO_DURACAO_HORAS * 60)));
-  const horasTurnoTxt = `${Math.floor(minutosTurno / 60)}h${String(minutosTurno % 60).padStart(2, "0")}`;
 
   const NAV_ITENS = [
     { id: "turno", label: "Turno", icone: "relogio" },
@@ -2190,30 +2296,33 @@ export default function App() {
               </div>
             </div>
 
-            <div
-              style={{
-                borderRadius: 30, padding: 22, background: `linear-gradient(150deg, ${cor.subBlocoRoxo}, rgba(124,58,237,.14))`,
-                border: `1px solid ${cor.cartaoBorda}`, boxShadow: cor.cartaoSombra, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-              }}
-            >
-              <div style={{ fontSize: 11, letterSpacing: "0.18em", color: cor.textoSecundario, fontWeight: 700 }}>TURNO EM ANDAMENTO</div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginTop: 8 }}>
-                <span style={{ fontFamily: "'Caprasimo', cursive", fontSize: 44 }}>{horasTurnoTxt}</span>
-                <span style={{ fontSize: 14, color: cor.textoSecundario }}>de {TURNO_DURACAO_HORAS}h</span>
-              </div>
-              <div style={{ height: 10, borderRadius: 999, background: "rgba(130,120,155,.24)", marginTop: 16, overflow: "hidden" }}>
-                <div style={{ width: `${Math.round(fracaoTurno * 100)}%`, height: "100%", borderRadius: 999, background: "linear-gradient(90deg,#22C55E,#86EFAC)", boxShadow: "0 0 16px rgba(74,222,128,.5)" }} />
-              </div>
-              <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
-                <div style={{ flex: 1, background: cor.subBlocoVerde, border: `1px solid ${cor.subBlocoVerdeBorda}`, borderRadius: 22, padding: "14px 16px" }}>
-                  <div style={{ fontFamily: "'Caprasimo', cursive", fontSize: 28 }}>{ocorrenciasHoje.length}</div>
-                  <div style={{ fontSize: 12, color: cor.textoSecundario, marginTop: 4 }}>ocorrências</div>
-                </div>
-                <div style={{ flex: 1, background: cor.subBlocoVerde, border: `1px solid ${cor.subBlocoVerdeBorda}`, borderRadius: 22, padding: "14px 16px" }}>
-                  <div style={{ fontFamily: "'Caprasimo', cursive", fontSize: 28, color: cor.verdeNumero }}>{rotinasFeitas}/{rotinasTotal}</div>
-                  <div style={{ fontSize: 12, color: cor.textoSecundario, marginTop: 4 }}>rotinas feitas</div>
-                </div>
-              </div>
+            <FormularioOcorrencia
+              cor={cor}
+              tema={tema}
+              novoLocal={novoLocal}
+              setNovoLocal={setNovoLocal}
+              novoLocalCustom={novoLocalCustom}
+              setNovoLocalCustom={setNovoLocalCustom}
+              novaOc={novaOc}
+              setNovaOc={setNovaOc}
+              fotoOcorrenciaCameraRef={fotoOcorrenciaCameraRef}
+              fotoOcorrenciaGaleriaRef={fotoOcorrenciaGaleriaRef}
+              selecionarFotoOcorrenciaManual={selecionarFotoOcorrenciaManual}
+              fotoOcorrenciaManualPreview={fotoOcorrenciaManualPreview}
+              limparFotoOcorrenciaManual={limparFotoOcorrenciaManual}
+              fotoOcorrenciaManualErro={fotoOcorrenciaManualErro}
+              registrarOcorrenciaManual={registrarOcorrenciaManual}
+              registrandoOcorrenciaManual={registrandoOcorrenciaManual}
+            />
+
+            <div style={{ display: "flex", alignItems: "center", gap: 16, borderRadius: 18, padding: "10px 16px", background: cor.cartao, border: `1px solid ${cor.cartaoBorda}` }}>
+              <span style={{ fontSize: 13, color: cor.textoPrincipal }}>
+                <strong style={{ fontFamily: "'Caprasimo', cursive", fontWeight: 400 }}>{ocorrenciasHoje.length}</strong> ocorrência{ocorrenciasHoje.length !== 1 ? "s" : ""}
+              </span>
+              <span style={{ width: 4, height: 4, borderRadius: 999, background: cor.textoSecundario, opacity: 0.5 }} />
+              <span style={{ fontSize: 13, color: cor.textoPrincipal }}>
+                <strong style={{ fontFamily: "'Caprasimo', cursive", fontWeight: 400 }}>{rotinasFeitas}/{rotinasTotal}</strong> rotinas feitas
+              </span>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 14, borderRadius: 26, padding: "16px 18px", background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}>
@@ -2234,43 +2343,6 @@ export default function App() {
                 <span style={{ width: 24, height: 24, borderRadius: 999, background: "#fff", display: "block" }} />
               </button>
             </div>
-
-            <div style={{ display: "flex", gap: 12 }}>
-              <button
-                onClick={() => setAba("ocorrencias")}
-                style={{ flex: 1, textAlign: "left", borderRadius: 26, padding: 16, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-              >
-                <div style={{ width: 40, height: 40, borderRadius: 999, background: cor.subBlocoVerde, border: `1px solid ${cor.subBlocoVerdeBorda}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icone nome="mais" tamanho={20} cor={cor.verdeNumero} />
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 700, marginTop: 11, lineHeight: 1.3 }}>Registrar<br />ocorrência</div>
-              </button>
-              <button
-                onClick={() => setAba("rotinas")}
-                style={{ flex: 1, textAlign: "left", borderRadius: 26, padding: 16, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-              >
-                <div style={{ width: 40, height: 40, borderRadius: 999, background: cor.subBlocoRoxo, border: `1px solid ${cor.subBlocoRoxoBorda}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icone nome="relogio" tamanho={20} cor={cor.roxo} />
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 700, marginTop: 11, lineHeight: 1.3 }}>Iniciar<br />ronda</div>
-              </button>
-            </div>
-
-            <div style={{ borderRadius: 26, padding: "16px 18px", background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
-              <div style={{ fontSize: 11, letterSpacing: "0.18em", color: cor.textoSecundario, fontWeight: 700 }}>PRÓXIMA ROTINA</div>
-              {proximaRotina ? (
-                <div style={{ fontSize: 15, marginTop: 9, lineHeight: 1.4 }}>{proximaRotina.titulo}</div>
-              ) : (
-                <div style={{ fontSize: 15, marginTop: 9, color: cor.textoSecundario }}>Todas as rotinas concluídas.</div>
-              )}
-            </div>
-
-            {ocorrenciasHoje[0] && (
-              <div style={{ borderRadius: 24, padding: "16px 18px", background: "transparent", border: `1px solid ${cor.cartaoBorda}` }}>
-                <div style={{ fontSize: 11, letterSpacing: "0.18em", color: cor.textoSecundario, fontWeight: 700 }}>ÚLTIMO REGISTRO</div>
-                <div style={{ fontSize: 15, marginTop: 6, lineHeight: 1.45 }}>{fmtHora(ocorrenciasHoje[0].ts)} · {ocorrenciasHoje[0].texto}</div>
-              </div>
-            )}
           </div>
         )}
 
@@ -2334,97 +2406,24 @@ export default function App() {
               <p style={{ fontSize: 13, color: cor.textoSecundario, marginTop: 2 }}>{ocorrenciasHoje.length} registro{ocorrenciasHoje.length !== 1 ? "s" : ""} neste turno</p>
             </div>
 
-            <div style={{ borderRadius: 26, padding: 16, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
-              <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario, marginBottom: 8 }}>Local</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {LOCAIS.map((l) => {
-                  const ativo = novoLocal === l.id;
-                  const bc = corBadgeLocal(l.id, tema);
-                  return (
-                    <button
-                      key={l.id}
-                      type="button"
-                      onClick={() => setNovoLocal(l.id)}
-                      style={{
-                        fontSize: 12, padding: "7px 14px", borderRadius: 999, border: "1px solid transparent",
-                        background: ativo ? bc.bg : "transparent", color: ativo ? bc.texto : cor.textoSecundario,
-                        borderColor: ativo ? "transparent" : cor.cartaoBorda, fontWeight: ativo ? 700 : 400,
-                      }}
-                    >
-                      {l.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {novoLocal === "outros" && (
-                <input
-                  type="text"
-                  value={novoLocalCustom}
-                  onChange={(e) => setNovoLocalCustom(e.target.value)}
-                  placeholder="Qual local? Ex.: Barrilete, apto 42..."
-                  style={{ width: "100%", marginTop: 8, background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, borderRadius: 14, padding: "10px 14px", fontSize: 13, color: cor.textoPrincipal }}
-                />
-              )}
-
-              <textarea
-                value={novaOc}
-                onChange={(e) => setNovaOc(e.target.value)}
-                placeholder="Descreva a ocorrência..."
-                rows={2}
-                style={{ width: "100%", marginTop: 12, background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, borderRadius: 14, padding: "10px 14px", fontSize: 14, color: cor.textoPrincipal, resize: "none" }}
-              />
-
-              <input
-                ref={fotoOcorrenciaCameraRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) => selecionarFotoOcorrenciaManual(e.target.files?.[0])}
-                className="hidden"
-              />
-              <input
-                ref={fotoOcorrenciaGaleriaRef}
-                type="file"
-                accept="image/*"
-                onChange={(e) => selecionarFotoOcorrenciaManual(e.target.files?.[0])}
-                className="hidden"
-              />
-              {fotoOcorrenciaManualPreview ? (
-                <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, borderRadius: 14, border: `1px solid ${cor.inputBorda}`, background: cor.inputBg, padding: 8 }}>
-                  <img src={fotoOcorrenciaManualPreview} alt="Prévia da foto" style={{ height: 48, width: 48, borderRadius: 10, objectFit: "cover" }} />
-                  <span style={{ fontSize: 12, color: cor.textoSecundario, flex: 1 }}>Foto anexada</span>
-                  <button type="button" onClick={limparFotoOcorrenciaManual} style={{ color: cor.textoSecundario, display: "flex" }} title="Remover foto">
-                    <Icone nome="x" tamanho={15} />
-                  </button>
-                </div>
-              ) : (
-                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                  <button
-                    type="button"
-                    onClick={() => fotoOcorrenciaCameraRef.current?.click()}
-                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "9px 0", borderRadius: 12, background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, color: cor.textoSecundario }}
-                  >
-                    <Icone nome="camera" tamanho={15} /> Tirar foto
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => fotoOcorrenciaGaleriaRef.current?.click()}
-                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, padding: "9px 0", borderRadius: 12, background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, color: cor.textoSecundario }}
-                  >
-                    <Icone nome="upload" tamanho={15} /> Galeria
-                  </button>
-                </div>
-              )}
-              {fotoOcorrenciaManualErro && <p style={{ fontSize: 11, color: "#FCA5A5", marginTop: 6 }}>{fotoOcorrenciaManualErro}</p>}
-
-              <button
-                onClick={registrarOcorrenciaManual}
-                disabled={!novaOc.trim() || registrandoOcorrenciaManual}
-                style={{ width: "100%", marginTop: 12, background: "#22C55E", color: "#052E16", fontWeight: 700, fontSize: 14, borderRadius: 999, padding: "13px 0", opacity: novaOc.trim() && !registrandoOcorrenciaManual ? 1 : 0.4, boxShadow: novaOc.trim() ? "0 0 20px rgba(34,197,94,.35)" : "none" }}
-              >
-                {registrandoOcorrenciaManual ? "Registrando..." : "Registrar com horário atual"}
-              </button>
-            </div>
+            <FormularioOcorrencia
+              cor={cor}
+              tema={tema}
+              novoLocal={novoLocal}
+              setNovoLocal={setNovoLocal}
+              novoLocalCustom={novoLocalCustom}
+              setNovoLocalCustom={setNovoLocalCustom}
+              novaOc={novaOc}
+              setNovaOc={setNovaOc}
+              fotoOcorrenciaCameraRef={fotoOcorrenciaCameraRef}
+              fotoOcorrenciaGaleriaRef={fotoOcorrenciaGaleriaRef}
+              selecionarFotoOcorrenciaManual={selecionarFotoOcorrenciaManual}
+              fotoOcorrenciaManualPreview={fotoOcorrenciaManualPreview}
+              limparFotoOcorrenciaManual={limparFotoOcorrenciaManual}
+              fotoOcorrenciaManualErro={fotoOcorrenciaManualErro}
+              registrarOcorrenciaManual={registrarOcorrenciaManual}
+              registrandoOcorrenciaManual={registrandoOcorrenciaManual}
+            />
 
             {ocorrenciasHoje.length === 0 ? (
               <div style={{ textAlign: "center", padding: "40px 0", color: cor.textoSecundario, fontSize: 14 }}>Nenhuma ocorrência registrada hoje.</div>
