@@ -1360,47 +1360,76 @@ export default function App() {
   }, [chat, pensando]);
 
   // Função para a IA falar a resposta em viva-voz (Text-To-Speech)
+  // Referência para o <audio> atual, para poder parar quando necessário.
+  const audioAtualRef = useRef(null);
+
   const falarTexto = async (texto) => {
-    if (!audioAtivoRef.current || !window.speechSynthesis) return;
+    if (!audioAtivoRef.current) return;
+
+    // Para qualquer áudio anterior ainda em reprodução.
+    if (audioAtualRef.current) {
+      audioAtualRef.current.pause();
+      audioAtualRef.current = null;
+    }
+
+    const limpo = aplicarCorrecoesFoneticas(texto.replace(/[*_#`[\]()]/g, "").trim());
+    if (!limpo) return;
+
+    setFalando(true);
+    setStatusVoz("Falando...");
+
     try {
-      window.speechSynthesis.cancel();
-      const limpo = texto.replace(/[*_#`[\]()]/g, "").trim();
-      if (!limpo) return;
+      // Chama /api/tts (Serverless Function em produção, plugin Vite em dev)
+      // que retorna o MP3 da voz pt-BR-FranciscaNeural da Microsoft.
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: limpo }),
+      });
 
-      // Aplica o mapa de correções fonéticas (ex.: "Lider" -> "líder") antes de falar.
-      const textoParaFalar = aplicarCorrecoesFoneticas(limpo);
+      if (!res.ok) throw new Error(`TTS retornou status ${res.status}`);
 
-      // Espera as vozes carregarem (se ainda não carregaram) e escolhe a melhor voz pt-BR.
-      const vozes = await obterVozes();
-      const vozPtBR = escolherVozPtBR(vozes);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioAtualRef.current = audio;
 
-      const utterance = new SpeechSynthesisUtterance(textoParaFalar);
-      utterance.lang = "pt-BR"; // força pt-BR mesmo se nenhuma voz pt-BR específica for encontrada
-      if (vozPtBR) utterance.voice = vozPtBR; // usa a voz pt-BR do dispositivo, se existir
-      utterance.rate = 1.05;
-      utterance.pitch = 1.0;
-      utterance.onstart = () => {
-        setFalando(true);
-        setStatusVoz("Falando...");
-      };
-      utterance.onend = () => {
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        audioAtualRef.current = null;
         setFalando(false);
         setStatusVoz("");
         if (modoVivaVozRef.current) {
-          setTimeout(() => {
-            iniciarGravacao();
-          }, 600);
+          setTimeout(() => iniciarGravacao(), 600);
         }
       };
-      utterance.onerror = () => {
+
+      audio.onerror = () => {
+        URL.revokeObjectURL(url);
+        audioAtualRef.current = null;
         setFalando(false);
         setStatusVoz("");
       };
-      window.speechSynthesis.speak(utterance);
+
+      await audio.play();
     } catch (e) {
-      console.error("Erro síntese voz:", e);
+      console.error("Lider Amigona: erro no TTS Francisca, usando Web Speech como fallback", e);
+      // Fallback para Web Speech API caso /api/tts falhe (ex.: sem internet)
       setFalando(false);
       setStatusVoz("");
+      if (window.speechSynthesis) {
+        const utterance = new SpeechSynthesisUtterance(limpo);
+        utterance.lang = "pt-BR";
+        utterance.rate = 1.05;
+        utterance.onstart = () => { setFalando(true); setStatusVoz("Falando..."); };
+        utterance.onend = () => {
+          setFalando(false);
+          setStatusVoz("");
+          if (modoVivaVozRef.current) setTimeout(() => iniciarGravacao(), 600);
+        };
+        utterance.onerror = () => { setFalando(false); setStatusVoz(""); };
+        window.speechSynthesis.speak(utterance);
+      }
     }
   };
 
@@ -1408,8 +1437,14 @@ export default function App() {
     const novoVal = !audioAtivo;
     setAudioAtivo(novoVal);
     await store.set("audio_ativo", novoVal);
-    if (!novoVal && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+    if (!novoVal) {
+      // Para o áudio da Francisca se estiver tocando
+      if (audioAtualRef.current) {
+        audioAtualRef.current.pause();
+        audioAtualRef.current = null;
+      }
+      // Para o Web Speech também (fallback)
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
       setFalando(false);
     }
   };

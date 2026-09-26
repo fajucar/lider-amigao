@@ -46,10 +46,58 @@ function gemeniDevProxyPlugin(env) {
   }
 }
 
+// Plugin de desenvolvimento para o TTS local: executa a mesma lógica de api/tts.js
+// sem precisar de um servidor separado. Em produção (Vercel) a Serverless Function
+// api/tts.js é chamada diretamente pelo frontend.
+function ttsDevPlugin() {
+  return {
+    name: 'tts-dev-proxy',
+    configureServer(server) {
+      server.middlewares.use('/api/tts', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end()
+          return
+        }
+        try {
+          const chunks = []
+          for await (const chunk of req) chunks.push(chunk)
+          const raw = Buffer.concat(chunks).toString('utf8')
+          const { text } = raw ? JSON.parse(raw) : {}
+          if (!text || !text.trim()) {
+            res.statusCode = 400
+            res.setHeader('Content-Type', 'application/json')
+            res.end(JSON.stringify({ error: "Campo 'text' vazio ou ausente." }))
+            return
+          }
+          const { MsEdgeTTS, OUTPUT_FORMAT } = await import('msedge-tts')
+          const tts = new MsEdgeTTS()
+          await tts.setMetadata('pt-BR-FranciscaNeural', OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3)
+          const { audioStream } = await tts.toStream(text.trim())
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'audio/mpeg')
+          res.setHeader('Cache-Control', 'no-store')
+          audioStream.on('data', (chunk) => res.write(chunk))
+          audioStream.on('end', () => res.end())
+          audioStream.on('error', (err) => {
+            console.error('Erro no audioStream TTS (dev):', err)
+            res.end()
+          })
+        } catch (e) {
+          console.error('Erro TTS dev:', e)
+          res.statusCode = 500
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ error: e.message }))
+        }
+      })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
-    plugins: [basicSsl(), react(), gemeniDevProxyPlugin(env)],
+    plugins: [basicSsl(), react(), gemeniDevProxyPlugin(env), ttsDevPlugin()],
     server: {
       host: '0.0.0.0',
       port: 5173,
