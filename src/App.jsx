@@ -28,7 +28,7 @@ const store = {
       localStorage.setItem(key, JSON.stringify(value));
       return true;
     } catch (e) {
-      console.error("Lider Amigão: falha ao salvar no armazenamento", key, e);
+      console.error("Lider Amigona: falha ao salvar no armazenamento", key, e);
       return false;
     }
   },
@@ -2149,7 +2149,7 @@ export default function App() {
                 <span style={{ fontSize: 20 }}>🛡️</span>
               </div>
               <div>
-                <span style={{ fontFamily: "'Space Grotesk', 'Outfit', sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Lider<br />Amigão</span>
+                <span style={{ fontFamily: "'Space Grotesk', 'Outfit', sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Lider<br />Amigona</span>
                 <p style={{ fontSize: 10, color: cor.textoSecundario, margin: "2px 0 0", letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: 600 }}>Guarita Inteligente</p>
               </div>
             </div>
@@ -2209,8 +2209,8 @@ export default function App() {
                   <span style={{ fontSize: 18 }}>🛡️</span>
                 </div>
                 <div>
-                  <p style={{ fontFamily: "'Space Grotesk', 'Outfit', sans-serif", fontSize: 17, fontWeight: 700, margin: 0, letterSpacing: "-0.01em" }}>Lider Amigão</p>
-                  <p style={{ fontSize: 11, color: cor.textoSecundario, margin: "1px 0 0" }}>HV Serv · Chamadas IA: {chamadasGroq}</p>
+                  <p style={{ fontFamily: "'Space Grotesk', 'Outfit', sans-serif", fontSize: 17, fontWeight: 700, margin: 0, letterSpacing: "-0.01em" }}>Lider Amigona</p>
+                  <p style={{ fontSize: 11, color: cor.textoSecundario, margin: "1px 0 0" }}>Guarita Inteligente · Chamadas IA: {chamadasGroq}</p>
                 </div>
               </div>
               <button
