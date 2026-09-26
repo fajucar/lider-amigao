@@ -17,14 +17,20 @@ const store = {
       return fallback;
     }
   },
+  // Retorna true/false pra quem quiser saber se salvou de verdade (ex.: avisar o usuário se o
+  // armazenamento estiver cheio), sem quebrar quem já chamava sem checar o retorno.
   async set(key, value) {
     try {
       if (window.storage) {
         await window.storage.set(key, JSON.stringify(value));
-        return;
+        return true;
       }
       localStorage.setItem(key, JSON.stringify(value));
-    } catch {}
+      return true;
+    } catch (e) {
+      console.error("Lider Amigão: falha ao salvar no armazenamento", key, e);
+      return false;
+    }
   },
 };
 
@@ -499,18 +505,18 @@ function catInfo(id) {
 // Cores das etiquetas de categoria no novo visual (vidro), por tema.
 function corBadgeCategoria(id, tema) {
   const escuro = {
-    acesso: { bg: "rgba(34,197,94,.22)", texto: "#BBF7D0" },
-    encomenda: { bg: "rgba(34,211,238,.22)", texto: "#A5F3FC" },
-    manutencao: { bg: "rgba(167,139,250,.28)", texto: "#EDE9FE" },
-    seguranca: { bg: "rgba(253,224,71,.2)", texto: "#FEF3C7" },
-    outros: { bg: "rgba(255,255,255,.14)", texto: "rgba(255,255,255,.85)" },
+    acesso: { bg: "rgba(16,185,129,.24)", texto: "#6EE7B7" },
+    encomenda: { bg: "rgba(6,182,212,.24)", texto: "#67E8F9" },
+    manutencao: { bg: "rgba(99,102,241,.28)", texto: "#C7D2FE" },
+    seguranca: { bg: "rgba(245,158,11,.24)", texto: "#FDE68A" },
+    outros: { bg: "rgba(255,255,255,.16)", texto: "#E2E8F0" },
   };
   const claro = {
-    acesso: { bg: "rgba(22,163,74,.16)", texto: "#166534" },
-    encomenda: { bg: "rgba(8,145,178,.16)", texto: "#155E75" },
-    manutencao: { bg: "rgba(109,40,217,.16)", texto: "#5B21B6" },
-    seguranca: { bg: "rgba(202,138,4,.18)", texto: "#854D0E" },
-    outros: { bg: "rgba(109,40,217,.08)", texto: "#4C3A6B" },
+    acesso: { bg: "rgba(16,185,129,.18)", texto: "#047857" },
+    encomenda: { bg: "rgba(2,132,199,.18)", texto: "#0369A1" },
+    manutencao: { bg: "rgba(79,70,229,.18)", texto: "#4338CA" },
+    seguranca: { bg: "rgba(217,119,6,.20)", texto: "#B45309" },
+    outros: { bg: "rgba(100,116,139,.12)", texto: "#334155" },
   };
   const mapa = tema === "light" ? claro : escuro;
   return mapa[id] || mapa.outros;
@@ -535,20 +541,20 @@ function nomeDoLocal(id, textoCustom) {
 // Cores das etiquetas de local no card de ocorrência, por tema (mesmo estilo vidro das categorias).
 function corBadgeLocal(id, tema) {
   const escuro = {
-    terreo: { bg: "rgba(34,197,94,.22)", texto: "#BBF7D0" },
-    pav1: { bg: "rgba(34,211,238,.22)", texto: "#A5F3FC" },
-    pav2: { bg: "rgba(167,139,250,.28)", texto: "#EDE9FE" },
-    pav3: { bg: "rgba(253,224,71,.2)", texto: "#FEF3C7" },
-    andar4: { bg: "rgba(248,113,113,.22)", texto: "#FECACA" },
-    outros: { bg: "rgba(255,255,255,.14)", texto: "rgba(255,255,255,.85)" },
+    terreo: { bg: "rgba(16,185,129,.24)", texto: "#6EE7B7" },
+    pav1: { bg: "rgba(6,182,212,.24)", texto: "#67E8F9" },
+    pav2: { bg: "rgba(99,102,241,.28)", texto: "#C7D2FE" },
+    pav3: { bg: "rgba(245,158,11,.24)", texto: "#FDE68A" },
+    andar4: { bg: "rgba(239,68,68,.24)", texto: "#FCA5A5" },
+    outros: { bg: "rgba(255,255,255,.16)", texto: "#E2E8F0" },
   };
   const claro = {
-    terreo: { bg: "rgba(22,163,74,.16)", texto: "#166534" },
-    pav1: { bg: "rgba(8,145,178,.16)", texto: "#155E75" },
-    pav2: { bg: "rgba(109,40,217,.16)", texto: "#5B21B6" },
-    pav3: { bg: "rgba(202,138,4,.18)", texto: "#854D0E" },
-    andar4: { bg: "rgba(190,18,60,.16)", texto: "#9F1239" },
-    outros: { bg: "rgba(109,40,217,.08)", texto: "#4C3A6B" },
+    terreo: { bg: "rgba(16,185,129,.18)", texto: "#047857" },
+    pav1: { bg: "rgba(2,132,199,.18)", texto: "#0369A1" },
+    pav2: { bg: "rgba(79,70,229,.18)", texto: "#4338CA" },
+    pav3: { bg: "rgba(217,119,6,.20)", texto: "#B45309" },
+    andar4: { bg: "rgba(225,29,72,.18)", texto: "#BE123C" },
+    outros: { bg: "rgba(100,116,139,.12)", texto: "#334155" },
   };
   const mapa = tema === "light" ? claro : escuro;
   return mapa[id] || mapa.outros;
@@ -769,6 +775,31 @@ function fmtDataLonga(iso) {
   return d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
 }
 
+// Agrupa ocorrências por dia (data no formato YYYY-MM-DD), do mais recente pro mais antigo.
+// Dentro de cada dia, mantém a ordem que já vem (mais nova primeiro), porque quem adiciona uma
+// ocorrência nova já coloca ela no início da lista.
+function agruparOcorrenciasPorData(ocorrencias) {
+  const hoje = hojeISO();
+  const ontem = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const porData = new Map();
+  ocorrencias.forEach((o) => {
+    if (!porData.has(o.data)) porData.set(o.data, []);
+    porData.get(o.data).push(o);
+  });
+  return [...porData.keys()]
+    .sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
+    .map((data) => ({
+      data,
+      rotulo:
+        data === hoje
+          ? "Hoje"
+          : data === ontem
+          ? "Ontem"
+          : new Date(data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+      itens: porData.get(data),
+    }));
+}
+
 // ---------- Text-to-Speech: seleção de voz pt-BR + correções fonéticas ----------
 
 // Palavras que o sintetizador de voz costuma pronunciar errado (ex.: lidas como se fossem
@@ -870,63 +901,63 @@ function Icone({ nome, tamanho = 20, espessura = 2.75, cor = "currentColor", sty
   );
 }
 
-// ---------- Tokens de cor por tema (vidro roxo/verde escuro, lilás/verde claro) ----------
+// ---------- Tokens de cor por tema (Solar Gold & Cyber Amber: Âmbar Obsidiana + Dourado Solar / Branco + Âmbar Real) ----------
 function tokensTema(tema) {
   if (tema === "light") {
     return {
-      fundoPagina: "radial-gradient(120% 80% at 80% 0%, #EDE4FF 0%, #F4F1FA 55%, #F7F5FB 100%)",
-      cartao: "rgba(255,255,255,.80)",
-      cartaoBorda: "rgba(109,40,217,.14)",
-      cartaoSombra: "0 14px 34px rgba(76,29,149,.14)",
-      subBlocoRoxo: "rgba(237,228,255,.85)",
-      subBlocoRoxoBorda: "rgba(109,40,217,.12)",
-      subBlocoVerde: "rgba(220,252,231,.85)",
-      subBlocoVerdeBorda: "rgba(22,163,74,.20)",
-      textoPrincipal: "#1E1035",
-      textoSecundario: "#5B4780",
-      textoNavInativo: "#4C3A6B",
-      iconeInativo: "#6B5A88",
-      roxo: "#6D28D9",
-      roxoClaro: "#EDE4FF",
-      verde: "#16A34A",
-      verdeNumero: "#15803D",
-      verdeTextoClaro: "#3F6B4A",
+      fundoPagina: "radial-gradient(120% 80% at 80% 0%, #FFFBEB 0%, #FFFDFA 55%, #FEF3C7 100%)",
+      cartao: "rgba(255,255,255,.94)",
+      cartaoBorda: "rgba(217,119,6,.22)",
+      cartaoSombra: "0 10px 30px rgba(217,119,6,.09)",
+      subBlocoRoxo: "rgba(254,243,199,.85)",
+      subBlocoRoxoBorda: "rgba(217,119,6,.25)",
+      subBlocoVerde: "rgba(253,230,138,.85)",
+      subBlocoVerdeBorda: "rgba(180,83,9,.32)",
+      textoPrincipal: "#1E1B18",
+      textoSecundario: "#453E38",
+      textoNavInativo: "#78716C",
+      iconeInativo: "#78716C",
+      roxo: "#D97706",
+      roxoClaro: "#FFFBEB",
+      verde: "#F59E0B",
+      verdeNumero: "#B45309",
+      verdeTextoClaro: "#78350F",
       textoSobreVerde: "#FFFFFF",
-      amareloBg: "rgba(253,224,71,.35)",
-      amareloTexto: "#92700C",
-      navBg: "rgba(255,255,255,.88)",
-      navSombra: "0 -4px 26px rgba(76,29,149,.12)",
-      inputBg: "rgba(255,255,255,.9)",
-      inputBorda: "rgba(109,40,217,.16)",
-      placeholder: "#8A7AAE",
+      amareloBg: "rgba(244,63,94,.20)",
+      amareloTexto: "#9F1239",
+      navBg: "rgba(255,255,255,.94)",
+      navSombra: "0 4px 25px rgba(217,119,6,.08)",
+      inputBg: "rgba(255,255,255,.98)",
+      inputBorda: "rgba(217,119,6,.32)",
+      placeholder: "#A8A29E",
     };
   }
   return {
-    fundoPagina: "radial-gradient(120% 80% at 80% 0%, #3B0A6B 0%, #1A0B2E 45%, #14002E 100%)",
-    cartao: "rgba(255,255,255,.10)",
-    cartaoBorda: "rgba(255,255,255,.20)",
-    cartaoSombra: "0 12px 30px rgba(0,0,0,.30)",
-    subBlocoRoxo: "rgba(167,139,250,.24)",
-    subBlocoRoxoBorda: "rgba(255,255,255,.22)",
-    subBlocoVerde: "rgba(20,0,46,.34)",
-    subBlocoVerdeBorda: "rgba(255,255,255,.16)",
-    textoPrincipal: "#FFFFFF",
-    textoSecundario: "rgba(255,255,255,.75)",
-    textoNavInativo: "rgba(255,255,255,.72)",
-    iconeInativo: "rgba(255,255,255,.72)",
-    roxo: "#A78BFA",
-    roxoClaro: "rgba(167,139,250,.28)",
-    verde: "#22C55E",
-    verdeNumero: "#4ADE80",
-    verdeTextoClaro: "#BBF7D0",
-    textoSobreVerde: "#052E16",
-    amareloBg: "rgba(253,224,71,.20)",
-    amareloTexto: "#FEF3C7",
-    navBg: "rgba(255,255,255,.12)",
-    navSombra: "none",
-    inputBg: "rgba(255,255,255,.10)",
-    inputBorda: "rgba(255,255,255,.20)",
-    placeholder: "rgba(255,255,255,.5)",
+    fundoPagina: "radial-gradient(120% 80% at 80% 0%, #151022 0%, #0D0B12 45%, #0A0810 100%)",
+    cartao: "rgba(21,16,34,.78)",
+    cartaoBorda: "rgba(245,158,11,.28)",
+    cartaoSombra: "0 12px 32px rgba(0,0,0,.65), 0 0 20px rgba(245,158,11,.15)",
+    subBlocoRoxo: "rgba(245,158,11,.16)",
+    subBlocoRoxoBorda: "rgba(251,191,36,.35)",
+    subBlocoVerde: "rgba(245,158,11,.22)",
+    subBlocoVerdeBorda: "rgba(251,191,36,.40)",
+    textoPrincipal: "#FFFBEB",
+    textoSecundario: "#F3F4F6",
+    textoNavInativo: "#9CA3AF",
+    iconeInativo: "#9CA3AF",
+    roxo: "#FBBF24",
+    roxoClaro: "rgba(251,191,36,.20)",
+    verde: "#F59E0B",
+    verdeNumero: "#FCD34D",
+    verdeTextoClaro: "#FEF3C7",
+    textoSobreVerde: "#451A03",
+    amareloBg: "rgba(244,63,94,.25)",
+    amareloTexto: "#FECDD3",
+    navBg: "rgba(21,16,34,.90)",
+    navSombra: "0 -4px 30px rgba(0,0,0,.70)",
+    inputBg: "rgba(21,16,34,.88)",
+    inputBorda: "rgba(245,158,11,.35)",
+    placeholder: "#6B7280",
   };
 }
 
@@ -946,11 +977,11 @@ function RotinaCard({ sec, cor, aberto, concluida, onToggleAberto, onToggleConcl
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: concluida ? "#22C55E" : "transparent",
+            background: concluida ? cor.verde : "transparent",
             border: concluida ? "none" : `1.5px solid ${cor.cartaoBorda}`,
           }}
         >
-          {concluida && <Icone nome="check" tamanho={13} espessura={3} cor="#052E16" />}
+          {concluida && <Icone nome="check" tamanho={13} espessura={3} cor={cor.textoSobreVerde} />}
         </button>
         <button
           type="button"
@@ -1106,7 +1137,7 @@ function FormularioOcorrencia({
       <button
         onClick={registrarOcorrenciaManual}
         disabled={!novaOc.trim() || registrandoOcorrenciaManual}
-        style={{ width: "100%", marginTop: 12, background: "#22C55E", color: "#052E16", fontWeight: 700, fontSize: 14, borderRadius: 999, padding: "13px 0", opacity: novaOc.trim() && !registrandoOcorrenciaManual ? 1 : 0.4, boxShadow: novaOc.trim() ? "0 0 20px rgba(34,197,94,.35)" : "none" }}
+        style={{ width: "100%", marginTop: 12, background: cor.verde, color: cor.textoSobreVerde, fontWeight: 700, fontSize: 14, borderRadius: 999, padding: "13px 0", opacity: novaOc.trim() && !registrandoOcorrenciaManual ? 1 : 0.4, boxShadow: novaOc.trim() ? `0 0 20px ${cor.verde}` : "none" }}
       >
         {registrandoOcorrenciaManual ? "Registrando..." : "Registrar com horário atual"}
       </button>
@@ -1115,7 +1146,7 @@ function FormularioOcorrencia({
 }
 
 export default function App() {
-  const [aba, setAba] = useState("turno");
+  const [aba, setAba] = useState("ocorrencias");
   const [tema, setTema] = useState("dark");
   const [rotinaAberta, setRotinaAberta] = useState(null);
   const [rotinasConcluidas, setRotinasConcluidas] = useState([]);
@@ -1207,14 +1238,12 @@ export default function App() {
   const [registrandoOcorrenciaManual, setRegistrandoOcorrenciaManual] = useState(false);
   const fotoOcorrenciaCameraRef = useRef(null);
   const fotoOcorrenciaGaleriaRef = useRef(null);
+  const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(null);
+  const [idCopiado, setIdCopiado] = useState(null);
 
-  // Turno / email
+  // Perfil do líder de portaria
   const [nomeLider, setNomeLider] = useState("");
   const [posto, setPosto] = useState("");
-  const [obsTurno, setObsTurno] = useState("");
-  const [emailGerado, setEmailGerado] = useState("");
-  const [gerandoEmail, setGerandoEmail] = useState(false);
-  const [copiado, setCopiado] = useState(false);
 
   // Escalas e Feedbacks dos Colaboradores
   const [escala, setEscala] = useState({
@@ -1236,6 +1265,10 @@ export default function App() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", tema);
+  }, [tema]);
 
   const alternarTema = async () => {
     const novo = tema === "dark" ? "light" : "dark";
@@ -1430,11 +1463,11 @@ export default function App() {
       setGravando(false);
       setStatusVoz("");
       const mensagens = {
-        "not-allowed": "Permissão do microfone negada no navegador.",
-        "service-not-allowed": "Permissão do microfone negada.",
-        "no-speech": "Não ouvi nada. Tente falar novamente.",
+        "not-allowed": "Permissão do microfone negada. Toque no ícone de cadeado 🔒 ao lado do site na barra de endereço e altere para PERMITIR o microfone.",
+        "service-not-allowed": "Permissão de microfone bloqueada pelas configurações do seu navegador.",
+        "no-speech": "Não ouvi nenhuma fala. Toque no microfone e tente falar novamente.",
         "audio-capture": "Nenhum microfone encontrado neste dispositivo.",
-        "network": "Erro de rede no reconhecimento de voz.",
+        "network": "Erro de conexão de rede no reconhecimento de voz.",
         aborted: "",
       };
       const msg = mensagens[event.error];
@@ -1445,9 +1478,13 @@ export default function App() {
     setVozDisponivel(true);
   }, []);
 
-  const iniciarGravacao = () => {
+  const iniciarGravacao = async () => {
+    if (!window.isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      setErroVoz("O microfone exige HTTPS para funcionar no celular. Acesse pelo link seguro: https://lider-amigao.vercel.app/");
+      return;
+    }
     if (!recognitionRef.current) {
-      if (!erroVoz) setErroVoz("Reconhecimento de voz indisponível neste navegador.");
+      if (!erroVoz) setErroVoz("Reconhecimento de voz indisponível neste navegador. Recomendamos usar o Google Chrome ou Edge.");
       return;
     }
     if (gravando || pensandoRef.current) return;
@@ -1455,9 +1492,24 @@ export default function App() {
     setFalando(false);
     setErroVoz("");
     setPergunta("");
+
+    // Solicita explicitamente a permissão de áudio para acionar a caixa de diálogo nativa do navegador
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    } catch (err) {
+      console.warn("Permissão de microfone não concedida pelo usuário:", err);
+      setErroVoz("Permissão do microfone negada. Clique no ícone de cadeado 🔒 na barra de endereço e escolha 'Permitir'.");
+      return;
+    }
+
     try {
       recognitionRef.current.start();
-    } catch (e) {}
+    } catch (e) {
+      console.error("Erro ao iniciar reconhecimento:", e);
+    }
   };
 
   const pararGravacao = () => {
@@ -1922,6 +1974,7 @@ export default function App() {
     const descricaoBruta = novaOc.trim();
     if (!descricaoBruta || registrandoOcorrenciaManual) return;
     setRegistrandoOcorrenciaManual(true);
+    setFotoOcorrenciaManualErro("");
     try {
       const local = nomeDoLocal(novoLocal, novoLocalCustom);
 
@@ -1968,7 +2021,14 @@ export default function App() {
       };
       const lista = [nova, ...ocorrencias];
       setOcorrencias(lista);
-      await store.set("ocorrencias", lista);
+      // As fotos já são redimensionadas/comprimidas antes de chegar aqui (ver
+      // redimensionarImagem), então isso só deve falhar com MUITAS fotos acumuladas.
+      const salvou = await store.set("ocorrencias", lista);
+      if (!salvou) {
+        setFotoOcorrenciaManualErro(
+          "Atenção: não consegui salvar no armazenamento do navegador (pode estar cheio de fotos antigas). Esta ocorrência ficou só nesta sessão."
+        );
+      }
       setNovaOc("");
       setNovoLocalCustom("");
       limparFotoOcorrenciaManual();
@@ -1983,7 +2043,16 @@ export default function App() {
     await store.set("ocorrencias", lista);
   };
 
+  const copiarOcorrencia = async (o) => {
+    try {
+      await navigator.clipboard.writeText(o.texto);
+      setIdCopiado(o.id);
+      setTimeout(() => setIdCopiado(null), 2000);
+    } catch {}
+  };
+
   const ocorrenciasHoje = ocorrencias.filter((o) => o.data === hojeISO());
+  const historicoAgrupado = useMemo(() => agruparOcorrenciasPorData(ocorrencias), [ocorrencias]);
 
   const atualizarEscalaItem = async (postoKey, campo, valor) => {
     const novaEscala = {
@@ -2028,41 +2097,6 @@ export default function App() {
     await adicionarOcorrencia(texto, p.status === "falta" ? "seguranca" : "acesso");
   };
 
-  const salvarEscalaDoDia = async () => {
-    const novosItensHistorico = [];
-    const dataHoje = hojeISO();
-    const postosNomes = {
-      portaria: "Portaria",
-      triagem: "Triagem",
-      ronda: "Ronda",
-      mensageria: "Mensageria"
-    };
-
-    Object.keys(escala).forEach((key) => {
-      const p = escala[key];
-      if (p.nome || p.conversa || p.status !== "pendente") {
-        novosItensHistorico.push({
-          id: Date.now() + Math.random(),
-          data: dataHoje,
-          posto: postosNomes[key],
-          nome: p.nome,
-          periodo: p.periodo,
-          status: p.status,
-          atraso: p.atraso,
-          conversa: p.conversa
-        });
-      }
-    });
-
-    if (novosItensHistorico.length > 0) {
-      const novoHist = [...novosItensHistorico, ...historicoEscalas];
-      setHistoricoEscalas(novoHist);
-      await store.set("historico_escala", novoHist);
-      return true;
-    }
-    return false;
-  };
-
   const excluirItemHistoricoEscala = async (id) => {
     const novoHist = historicoEscalas.filter((h) => h.id !== id);
     setHistoricoEscalas(novoHist);
@@ -2078,113 +2112,16 @@ export default function App() {
     await store.set("rotinas_concluidas", { data: hojeISO(), ids: lista });
   };
 
-  const gerarEmail = async () => {
-    if (gerandoEmail) return;
-    setGerandoEmail(true);
-    setEmailGerado("");
-    try {
-      const lista = ocorrenciasHoje
-        .slice()
-        .reverse()
-        .map((o) => `${fmtHora(o.ts)} [${catInfo(o.categoria).label}] ${o.texto}${o.imagem ? " [foto anexada]" : ""}\n  Regulamento: ${o.regulamentoRef?.artigo || "Não encontrado"} - ${o.regulamentoRef?.resumo || "Nenhuma regra específica encontrada no regulamento."}`)
-        .join("\n");
-
-      const postosNomes = {
-        portaria: "Portaria",
-        triagem: "Triagem",
-        ronda: "Ronda",
-        mensageria: "Mensageria"
-      };
-
-      const resumoEscala = Object.keys(escala)
-        .map((key) => {
-          const p = escala[key];
-          const nomeP = postosNomes[key];
-          const statusStr = p.status === "no_horario" ? "No Horário" :
-                            p.status === "atrasado" ? `Atrasado (${p.atraso} min)` :
-                            p.status === "falta" ? "Falta" : "Pendente";
-          return `- ${nomeP} (${p.periodo === "diurno" ? "Diurno" : "Noturno"}): ${p.nome || "Não informado"} [Status: ${statusStr}]${p.conversa ? ` - Feedback: ${p.conversa}` : ""}`;
-        })
-        .join("\n");
-
-      const system =
-        "Você é o assistente de um líder de portaria. Gere um RELATÓRIO DE TURNO profissional em português do Brasil, " +
-        "claro e objetivo, para registro e envio à administração ou supervisão. " +
-        "Estruture assim: um cabeçalho com data, posto e responsável; a escala de colaboradores e o status das rendições do dia; " +
-        "a lista de OCORRÊNCIAS em ordem de horário; " +
-        "uma seção de OBSERVAÇÕES GERAIS; e a assinatura do responsável. " +
-        "Se não houver ocorrências, registre 'Turno sem ocorrências relevantes'. " +
-        "Não invente informação que não foi passada. Não use travessão, use vírgulas ou ponto.";
-      const user =
-        `Data do turno: ${fmtDataLonga(hojeISO())}.\n` +
-        `Líder de portaria: ${nomeLider || "(não informado)"}.\n` +
-        `Posto: ${posto || "(não informado)"}.\n\n` +
-        `Escala de Colaboradores e Rendições:\n${resumoEscala}\n\n` +
-        `Ocorrências registradas:\n${lista || "Nenhuma ocorrência registrada."}\n\n` +
-        `Observações gerais do turno: ${obsTurno || "Sem observações adicionais."}\n\n` +
-        `Gere o e-mail completo.`;
-      const resp = await callChatWithFallback(system, [{ role: "user", content: user }], { json: false });
-      const referenciasRelatorio = ocorrenciasHoje
-        .slice()
-        .reverse()
-        .map((o) => `- ${linhaReferenciaRegulamento(o.regulamentoRef)}`)
-        .join("\n");
-      const relatorioComReferencias = resp
-        ? `${resp}\n\nREFERÊNCIAS DO REGULAMENTO\n${referenciasRelatorio || "- 📖 Referência: Nenhuma regra específica encontrada no regulamento para este caso."}`
-        : "Não consegui gerar o e-mail agora. Tenta de novo.";
-      setEmailGerado(relatorioComReferencias);
-      salvarPerfil(nomeLider, posto);
-    } catch (e) {
-      setEmailGerado("Falhou a conexão ao gerar o e-mail. Tenta de novo.");
-    } finally {
-      setGerandoEmail(false);
-    }
-  };
-
-  const copiarEmail = async () => {
-    try {
-      await navigator.clipboard.writeText(emailGerado);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2000);
-    } catch {}
-  };
-
-  const enviarWhatsApp = () => {
-    if (!emailGerado.trim()) return;
-    window.open(`https://wa.me/?text=${encodeURIComponent(emailGerado)}`, "_blank", "noopener,noreferrer");
-  };
-
-  const fecharTurno = async () => {
-    // Salva a escala atual no histórico antes de limpar
-    await salvarEscalaDoDia();
-
-    // arquiva: mantém histórico mas limpa observações, chat e escalas da tela
-    setObsTurno("");
-    setChat([]);
-    setEmailGerado("");
-    
-    const escalaLimpa = {
-      portaria: { nome: "", periodo: "diurno", status: "pendente", atraso: "", conversa: "" },
-      triagem: { nome: "", periodo: "diurno", status: "pendente", atraso: "", conversa: "" },
-      ronda: { nome: "", periodo: "diurno", status: "pendente", atraso: "", conversa: "" },
-      mensageria: { nome: "", periodo: "diurno", status: "pendente", atraso: "", conversa: "" },
-    };
-    setEscala(escalaLimpa);
-    await store.set("escala_atual", escalaLimpa);
-  };
-
-
   const cor = tokensTema(tema);
   const rotinasFeitas = rotinasConcluidas.length;
   const rotinasTotal = ROTINAS.length;
   const progressoRotinas = rotinasTotal ? Math.round((rotinasFeitas / rotinasTotal) * 100) : 0;
 
   const NAV_ITENS = [
-    { id: "turno", label: "Turno", icone: "relogio" },
+    { id: "ocorrencias", label: "Ocorrências", icone: "livro" },
+    { id: "turno", label: "Histórico", icone: "relogio", badge: ocorrenciasHoje.length },
     { id: "consultar", label: "Consultar", icone: "mensagem" },
     { id: "rotinas", label: "Rotinas", icone: "checkQuadro" },
-    { id: "ocorrencias", label: "Ocorrências", icone: "livro", badge: ocorrenciasHoje.length },
-    { id: "relatorio", label: "Relatório", icone: "arquivo" },
     { id: "regras", label: "Regras", icone: "menu" },
   ];
 
@@ -2197,32 +2134,46 @@ export default function App() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: cor.fundoPagina, color: cor.textoPrincipal }}>
-      <div className="md:flex md:items-start">
+    <div style={{ minHeight: "100vh", background: cor.fundoPagina, color: cor.textoPrincipal }} className="relative overflow-x-hidden">
+      {/* Ambient background glow orbs */}
+      <div className="bg-ambient-glow" />
+
+      <div className="md:flex md:items-start relative z-10">
         {/* Menu lateral (desktop) */}
-        <aside className="hidden md:flex md:shrink-0 md:w-[268px] md:sticky md:top-0 md:h-screen md:p-4">
-          <div style={{ background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, boxShadow: cor.cartaoSombra, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderRadius: 28, padding: "22px 18px", display: "flex", flexDirection: "column", gap: 20, width: "100%" }}>
-            <div className="flex items-center gap-2.5">
-              <div style={{ width: 38, height: 38, borderRadius: 999, background: "linear-gradient(140deg,#4ADE80,#7C3AED)", flexShrink: 0 }} />
-              <span style={{ fontFamily: "'Caprasimo', cursive", fontSize: 18, lineHeight: 1.15 }}>Lider<br />Amigão</span>
+        <aside className="hidden md:flex md:shrink-0 md:w-[275px] md:sticky md:top-0 md:h-screen md:p-5">
+          <div style={{ background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, boxShadow: cor.cartaoSombra, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderRadius: 24, padding: "24px 18px", display: "flex", flexDirection: "column", gap: 20, width: "100%" }}>
+            <div className="flex items-center gap-3">
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, #F59E0B 0%, #F43F5E 100%)", boxShadow: "0 0 16px rgba(245, 158, 11, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span style={{ fontSize: 20 }}>🛡️</span>
+              </div>
+              <div>
+                <span style={{ fontFamily: "'Space Grotesk', 'Outfit', sans-serif", fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.15 }}>Lider<br />Amigão</span>
+                <p style={{ fontSize: 10, color: cor.textoSecundario, margin: "2px 0 0", letterSpacing: "0.05em", textTransform: "uppercase", fontWeight: 600 }}>Guarita Inteligente</p>
+              </div>
             </div>
-            <div className="flex flex-col gap-1.5">
+
+            <div className="flex flex-col gap-2.5">
               {NAV_ITENS.map((item) => {
                 const ativo = aba === item.id;
                 return (
                   <button
                     key={item.id}
                     onClick={() => setAba(item.id)}
+                    className={`transition-all duration-200 transform ${ativo ? "translate-x-1 shadow-lg" : "hover:translate-x-1.5 hover:bg-white/5 active:scale-95"}`}
                     style={{
-                      display: "flex", alignItems: "center", gap: 11, padding: "12px 14px", borderRadius: 18, textAlign: "left",
-                      background: ativo ? "rgba(34,197,94,.16)" : "transparent",
-                      border: ativo ? "1px solid rgba(74,222,128,.4)" : "1px solid transparent",
+                      display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 16, textAlign: "left",
+                      background: ativo ? "rgba(245, 158, 11, 0.20)" : "transparent",
+                      border: ativo ? "1px solid rgba(245, 158, 11, 0.50)" : "1px solid transparent",
+                      boxShadow: ativo ? "0 8px 25px -4px rgba(245, 158, 11, 0.30)" : "none",
+                      backdropFilter: ativo ? "blur(12px)" : "none",
                     }}
                   >
-                    <Icone nome={item.icone} tamanho={19} cor={ativo ? "#4ADE80" : cor.iconeInativo} />
+                    <div style={{ width: 28, height: 28, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: ativo ? "rgba(245, 158, 11, 0.15)" : "transparent" }}>
+                      <Icone nome={item.icone} tamanho={19} cor={ativo ? cor.verde : cor.iconeInativo} />
+                    </div>
                     <span style={{ fontSize: 14, fontWeight: ativo ? 700 : 500, flex: 1, color: ativo ? cor.textoPrincipal : cor.textoSecundario }}>{item.label}</span>
                     {item.badge > 0 && (
-                      <span style={{ fontSize: 11, fontWeight: 700, background: "#22C55E", color: "#052E16", borderRadius: 999, minWidth: 18, height: 18, padding: "0 5px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, background: cor.verde, color: cor.textoSobreVerde, borderRadius: 999, minWidth: 18, height: 18, padding: "0 6px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 10px rgba(245, 158, 11, 0.4)" }}>
                         {item.badge}
                       </span>
                     )}
@@ -2230,10 +2181,18 @@ export default function App() {
                 );
               })}
             </div>
-            <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: 18, background: cor.subBlocoVerde, border: `1px solid ${cor.subBlocoVerdeBorda}` }}>
-              <span style={{ fontSize: 13 }}>Tema</span>
-              <button onClick={alternarTema} style={{ width: 28, height: 28, borderRadius: 999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={15} cor={tema === "dark" ? "#FDE68A" : cor.roxo} />
+
+            <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, background: cor.subBlocoVerde, border: `1px solid ${cor.subBlocoVerdeBorda}` }}>
+              <div className="flex items-center gap-2">
+                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={16} cor={tema === "dark" ? "#FBBF24" : "#D97706"} />
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{tema === "dark" ? "Modo Escuro" : "Modo Claro"}</span>
+              </div>
+              <button 
+                onClick={alternarTema} 
+                className="transition-transform duration-200 hover:scale-110 active:scale-95"
+                style={{ width: 32, height: 32, borderRadius: 999, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}
+              >
+                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={16} cor={tema === "dark" ? "#FBBF24" : "#D97706"} />
               </button>
             </div>
           </div>
@@ -2241,40 +2200,45 @@ export default function App() {
 
         <div className="flex-1 min-w-0 flex justify-center">
           <div className="w-full md:max-w-[1200px] md:py-6 md:px-6" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", position: "relative" }}>
-            {/* Cabeçalho (só mobile — no desktop a saudação mora na tela de Turno) */}
-            <header className="md:hidden flex items-center justify-between" style={{ padding: "20px 16px 12px" }}>
-              <div className="flex items-center gap-2.5">
-                <div style={{ width: 36, height: 36, borderRadius: 999, background: "linear-gradient(140deg,#4ADE80,#7C3AED)", flexShrink: 0 }} />
+            {/* Cabeçalho (só mobile) */}
+            <header className="md:hidden flex items-center justify-between" style={{ padding: "16px 16px 8px" }}>
+              <div className="flex items-center gap-3">
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #F59E0B 0%, #F43F5E 100%)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 18 }}>🛡️</span>
+                </div>
                 <div>
-                  <p style={{ fontFamily: "'Caprasimo', cursive", fontSize: 16, margin: 0 }}>Lider Amigão</p>
-                  <p style={{ fontSize: 11, color: cor.textoSecundario, margin: "2px 0 0" }}>HV Serv · Chamadas IA: {chamadasGroq}</p>
+                  <p style={{ fontFamily: "'Space Grotesk', 'Outfit', sans-serif", fontSize: 17, fontWeight: 700, margin: 0, letterSpacing: "-0.01em" }}>Lider Amigão</p>
+                  <p style={{ fontSize: 11, color: cor.textoSecundario, margin: "1px 0 0" }}>HV Serv · Chamadas IA: {chamadasGroq}</p>
                 </div>
               </div>
               <button
                 onClick={alternarTema}
-                style={{ width: 40, height: 40, borderRadius: 999, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, display: "flex", alignItems: "center", justifyContent: "center" }}
+                className="transition-transform duration-200 hover:scale-105 active:scale-95"
+                style={{ width: 40, height: 40, borderRadius: 14, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
-                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={18} cor={tema === "dark" ? "#FDE68A" : cor.roxo} />
+                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={18} cor={tema === "dark" ? "#FBBF24" : cor.roxo} />
               </button>
             </header>
 
-            {/* Navegação inferior (mobile) */}
+            {/* Navegação flutuante inferior (mobile dock) */}
             <nav
-              className="md:hidden grid grid-cols-6"
+              className="md:hidden grid grid-cols-5"
               style={{
-                position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 20,
-                background: cor.navBg, backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", boxShadow: cor.navSombra,
-                borderTop: `1px solid ${cor.cartaoBorda}`, padding: "10px 2px",
+                position: "fixed", left: 12, right: 12, bottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)", zIndex: 40,
+                background: cor.navBg, backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", boxShadow: cor.navSombra,
+                border: `1px solid ${cor.cartaoBorda}`, borderRadius: 24, padding: "8px 4px",
               }}
             >
               {NAV_ITENS.map((item) => {
                 const ativo = aba === item.id;
                 return (
-                  <button key={item.id} onClick={() => setAba(item.id)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, position: "relative" }}>
-                    <Icone nome={item.icone} tamanho={19} cor={ativo ? "#22C55E" : cor.iconeInativo} />
-                    <span style={{ fontSize: 9, fontWeight: ativo ? 700 : 500, color: ativo ? cor.textoPrincipal : cor.textoNavInativo }}>{item.label}</span>
+                  <button key={item.id} onClick={() => setAba(item.id)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, position: "relative", padding: "4px 0" }}>
+                    <div style={{ padding: "4px 12px", borderRadius: 14, background: ativo ? "rgba(245, 158, 11, 0.20)" : "transparent" }}>
+                      <Icone nome={item.icone} tamanho={19} cor={ativo ? cor.verde : cor.iconeInativo} />
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: ativo ? 700 : 500, color: ativo ? cor.textoPrincipal : cor.textoNavInativo }}>{item.label}</span>
                     {item.badge > 0 && (
-                      <span style={{ position: "absolute", top: -4, right: "50%", transform: "translateX(14px)", background: "#22C55E", color: "#052E16", fontSize: 9, fontWeight: 700, borderRadius: 999, minWidth: 15, height: 15, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ position: "absolute", top: 0, right: "50%", transform: "translateX(16px)", background: cor.verde, color: cor.textoSobreVerde, fontSize: 9, fontWeight: 700, borderRadius: 999, minWidth: 15, height: 15, padding: "0 3px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                         {item.badge}
                       </span>
                     )}
@@ -2284,65 +2248,69 @@ export default function App() {
             </nav>
 
             {/* Conteúdo */}
-      <main className="flex-1 md:pb-10" style={{ paddingBottom: 108 }}>
+      <main className="flex-1 md:pb-12" style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 175px)" }}>
         {aba === "turno" && (
-          <div className="px-4 md:px-0 py-5 md:py-2" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="px-4 md:px-0 py-5 md:py-2" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
-              <div style={{ fontFamily: "'Caprasimo', cursive", fontSize: 27, lineHeight: 1.15 }}>
-                Bom turno{nomeLider ? `, Líder ${nomeLider}` : ""}
-              </div>
-              <div style={{ fontSize: 13, color: cor.textoSecundario, marginTop: 3 }}>
-                {posto || "Seu condomínio"} · {fmtDataLonga(hojeISO())}
-              </div>
+              <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario }}>{posto || "Seu condomínio"}</p>
+              <h2 style={{ fontFamily: "'Space Grotesk', 'Outfit', sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em" }}>Histórico</h2>
+              <p style={{ fontSize: 13, color: cor.textoSecundario, marginTop: 2 }}>
+                {ocorrencias.length} ocorrência{ocorrencias.length !== 1 ? "s" : ""} registrada{ocorrencias.length !== 1 ? "s" : ""} no total
+              </p>
             </div>
 
-            <FormularioOcorrencia
-              cor={cor}
-              tema={tema}
-              novoLocal={novoLocal}
-              setNovoLocal={setNovoLocal}
-              novoLocalCustom={novoLocalCustom}
-              setNovoLocalCustom={setNovoLocalCustom}
-              novaOc={novaOc}
-              setNovaOc={setNovaOc}
-              fotoOcorrenciaCameraRef={fotoOcorrenciaCameraRef}
-              fotoOcorrenciaGaleriaRef={fotoOcorrenciaGaleriaRef}
-              selecionarFotoOcorrenciaManual={selecionarFotoOcorrenciaManual}
-              fotoOcorrenciaManualPreview={fotoOcorrenciaManualPreview}
-              limparFotoOcorrenciaManual={limparFotoOcorrenciaManual}
-              fotoOcorrenciaManualErro={fotoOcorrenciaManualErro}
-              registrarOcorrenciaManual={registrarOcorrenciaManual}
-              registrandoOcorrenciaManual={registrandoOcorrenciaManual}
-            />
-
-            <div style={{ display: "flex", alignItems: "center", gap: 16, borderRadius: 18, padding: "10px 16px", background: cor.cartao, border: `1px solid ${cor.cartaoBorda}` }}>
-              <span style={{ fontSize: 13, color: cor.textoPrincipal }}>
-                <strong style={{ fontFamily: "'Caprasimo', cursive", fontWeight: 400 }}>{ocorrenciasHoje.length}</strong> ocorrência{ocorrenciasHoje.length !== 1 ? "s" : ""}
-              </span>
-              <span style={{ width: 4, height: 4, borderRadius: 999, background: cor.textoSecundario, opacity: 0.5 }} />
-              <span style={{ fontSize: 13, color: cor.textoPrincipal }}>
-                <strong style={{ fontFamily: "'Caprasimo', cursive", fontWeight: 400 }}>{rotinasFeitas}/{rotinasTotal}</strong> rotinas feitas
-              </span>
-            </div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 14, borderRadius: 26, padding: "16px 18px", background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)" }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>Assistente por voz</div>
-                <div style={{ fontSize: 12, color: cor.textoSecundario, marginTop: 3 }}>Ouve e responde sem parar (Viva-Voz)</div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModoVivaVoz(!modoVivaVoz)}
-                style={{
-                  width: 54, height: 30, borderRadius: 999, display: "flex", alignItems: "center", padding: 3,
-                  background: modoVivaVoz ? "#22C55E" : "rgba(140,130,165,.35)",
-                  boxShadow: modoVivaVoz ? "0 0 18px rgba(34,197,94,.55)" : "none",
-                  justifyContent: modoVivaVoz ? "flex-end" : "flex-start", transition: "background 180ms",
-                }}
-              >
-                <span style={{ width: 24, height: 24, borderRadius: 999, background: "#fff", display: "block" }} />
-              </button>
-            </div>
+            {historicoAgrupado.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "40px 0", color: cor.textoSecundario, fontSize: 14 }}>Nenhuma ocorrência registrada ainda.</div>
+            ) : (
+              historicoAgrupado.map((grupo) => (
+                <div key={grupo.data} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.18em", color: cor.textoSecundario, fontWeight: 700 }}>{grupo.rotulo}</p>
+                  <div className="flex flex-col md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3" style={{ gap: 10 }}>
+                    {grupo.itens.map((o) => {
+                      const rotuloLocal = o.local || catInfo(o.categoria).label;
+                      const bc = corBadgeLocal(o.localId || "outros", tema);
+                      return (
+                        <div
+                          key={o.id}
+                          onClick={() => setOcorrenciaSelecionada(o)}
+                          style={{ cursor: "pointer", borderRadius: 22, padding: "14px 16px", background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, padding: "5px 11px", borderRadius: 999, background: bc.bg, color: bc.texto }}>{rotuloLocal.toUpperCase()}</span>
+                            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 15 }}>{fmtHora(o.ts)}</span>
+                          </div>
+                          <p style={{ fontSize: 14, marginTop: 10, lineHeight: 1.45, whiteSpace: "pre-wrap" }}>{o.texto}</p>
+                          {o.imagem && <img src={o.imagem} alt="Foto da ocorrência" style={{ marginTop: 8, maxHeight: 160, maxWidth: "100%", borderRadius: 12, objectFit: "contain" }} />}
+                          {o.regulamentoRef && (
+                            <div style={{ marginTop: 10, borderLeft: "2px solid rgba(74,222,128,.5)", paddingLeft: 10, fontSize: 12, lineHeight: 1.4 }}>
+                              <p style={{ color: cor.verdeNumero, fontWeight: 600, margin: 0 }}>{o.regulamentoRef.artigo}</p>
+                              <p style={{ color: cor.textoSecundario, margin: "2px 0 0" }}>{o.regulamentoRef.resumo}</p>
+                            </div>
+                          )}
+                          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); copiarOcorrencia(o); }}
+                              style={{ flex: 1, fontSize: 12, fontWeight: 600, padding: "8px 0", borderRadius: 10, background: idCopiado === o.id ? cor.subBlocoVerde : cor.inputBg, border: `1px solid ${idCopiado === o.id ? cor.subBlocoVerdeBorda : cor.inputBorda}`, color: idCopiado === o.id ? cor.verdeNumero : cor.textoSecundario }}
+                            >
+                              {idCopiado === o.id ? "Copiado ✓" : "Copiar"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); removerOcorrencia(o.id); }}
+                              style={{ padding: "8px 14px", borderRadius: 10, background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, color: cor.textoSecundario, display: "flex", alignItems: "center" }}
+                              title="Remover"
+                            >
+                              <Icone nome="x" tamanho={14} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
@@ -2351,7 +2319,9 @@ export default function App() {
             <div className="px-4 md:px-0 py-3 md:py-2 pb-8 md:max-w-2xl md:mx-auto" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {chat.length === 0 && (
                 <div style={{ textAlign: "center", padding: "24px 16px 0" }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 999, background: "linear-gradient(140deg,#A78BFA,#22C55E)", margin: "0 auto 14px" }} />
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: "linear-gradient(135deg, #F59E0B 0%, #F43F5E 100%)", boxShadow: "0 0 16px rgba(245, 158, 11, 0.4)", margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <span style={{ fontSize: 20 }}>💬</span>
+                  </div>
                   <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Pergunte durante o turno</p>
                   <p style={{ fontSize: 12, color: cor.textoSecundario, lineHeight: 1.6, marginBottom: 14 }}>
                     "Pode entrar entregador de madrugada?" · "Qual o horário de silêncio?" · "Visitante sem morador autorizar, o que faço?"
@@ -2402,8 +2372,10 @@ export default function App() {
           <div className="px-4 md:px-0 py-4 md:py-2" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div>
               <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario }}>{fmtDataLonga(hojeISO())}</p>
-              <h2 style={{ fontFamily: "'Caprasimo', cursive", fontSize: 24 }}>Ocorrências</h2>
-              <p style={{ fontSize: 13, color: cor.textoSecundario, marginTop: 2 }}>{ocorrenciasHoje.length} registro{ocorrenciasHoje.length !== 1 ? "s" : ""} neste turno</p>
+              <h2 style={{ fontFamily: "'Space Grotesk', 'Outfit', sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em" }}>Ocorrências</h2>
+              <p style={{ fontSize: 13, color: cor.textoSecundario, marginTop: 2 }}>
+                {ocorrenciasHoje.length} registro{ocorrenciasHoje.length !== 1 ? "s" : ""} hoje · veja o histórico completo na aba Histórico
+              </p>
             </div>
 
             <FormularioOcorrencia
@@ -2425,113 +2397,16 @@ export default function App() {
               registrandoOcorrenciaManual={registrandoOcorrenciaManual}
             />
 
-            {ocorrenciasHoje.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px 0", color: cor.textoSecundario, fontSize: 14 }}>Nenhuma ocorrência registrada hoje.</div>
-            ) : (
-              <div className="flex flex-col md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3" style={{ gap: 10 }}>
-                {ocorrenciasHoje.map((o) => {
-                  const rotuloLocal = o.local || catInfo(o.categoria).label;
-                  const bc = corBadgeLocal(o.localId || "outros", tema);
-                  return (
-                    <div key={o.id} style={{ borderRadius: 22, padding: "14px 16px", background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: "5px 11px", borderRadius: 999, background: bc.bg, color: bc.texto }}>{rotuloLocal.toUpperCase()}</span>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontFamily: "'Caprasimo', cursive", fontSize: 15 }}>{fmtHora(o.ts)}</span>
-                          <button onClick={() => removerOcorrencia(o.id)} style={{ color: cor.textoSecundario, display: "flex" }}>
-                            <Icone nome="x" tamanho={14} />
-                          </button>
-                        </div>
-                      </div>
-                      <p style={{ fontSize: 14, marginTop: 10, lineHeight: 1.45, whiteSpace: "pre-wrap" }}>{o.texto}</p>
-                      {o.imagem && <img src={o.imagem} alt="Foto da ocorrência" style={{ marginTop: 8, maxHeight: 160, maxWidth: "100%", borderRadius: 12, objectFit: "contain" }} />}
-                      {o.regulamentoRef && (
-                        <div style={{ marginTop: 10, borderLeft: "2px solid rgba(74,222,128,.5)", paddingLeft: 10, fontSize: 12, lineHeight: 1.4 }}>
-                          <p style={{ color: cor.verdeNumero, fontWeight: 600, margin: 0 }}>{o.regulamentoRef.artigo}</p>
-                          <p style={{ color: cor.textoSecundario, margin: "2px 0 0" }}>{o.regulamentoRef.resumo}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+            {ocorrenciasHoje[0] && (
+              <button
+                type="button"
+                onClick={() => setOcorrenciaSelecionada(ocorrenciasHoje[0])}
+                style={{ textAlign: "left", borderRadius: 22, padding: "14px 16px", background: cor.cartao, border: `1px solid ${cor.cartaoBorda}` }}
+              >
+                <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario, marginBottom: 6 }}>Último registro</p>
+                <p style={{ fontSize: 13, lineHeight: 1.4, color: cor.textoPrincipal }}>{fmtHora(ocorrenciasHoje[0].ts)} · {(ocorrenciasHoje[0].local || catInfo(ocorrenciasHoje[0].categoria).label)}</p>
+              </button>
             )}
-          </div>
-        )}
-
-        {aba === "relatorio" && (
-          <div className="px-4 md:px-0 py-4 md:py-2" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div>
-              <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario }}>Fechamento de turno</p>
-              <h2 style={{ fontFamily: "'Caprasimo', cursive", fontSize: 24 }}>Relatório do turno</h2>
-              <p style={{ fontSize: 13, color: cor.textoSecundario, marginTop: 3, lineHeight: 1.5 }}>
-                Gera o relatório com as ocorrências do dia, pronto pra registrar ou enviar por WhatsApp.
-              </p>
-            </div>
-
-            <div className={"flex flex-col " + (emailGerado ? "md:grid md:grid-cols-2 md:gap-4 md:items-start" : "")} style={{ gap: 12 }}>
-              <div style={{ borderRadius: 26, padding: 16, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", display: "flex", flexDirection: "column", gap: 10 }}>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    value={nomeLider}
-                    onChange={(e) => setNomeLider(e.target.value)}
-                    placeholder="Seu nome"
-                    style={{ background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, borderRadius: 14, padding: "10px 14px", fontSize: 13, color: cor.textoPrincipal }}
-                  />
-                  <input
-                    value={posto}
-                    onChange={(e) => setPosto(e.target.value)}
-                    placeholder="Posto / condomínio"
-                    style={{ background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, borderRadius: 14, padding: "10px 14px", fontSize: 13, color: cor.textoPrincipal }}
-                  />
-                </div>
-                <textarea
-                  value={obsTurno}
-                  onChange={(e) => setObsTurno(e.target.value)}
-                  placeholder="Observações gerais do turno (opcional)..."
-                  rows={2}
-                  style={{ width: "100%", background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, borderRadius: 14, padding: "10px 14px", fontSize: 13, color: cor.textoPrincipal, resize: "none" }}
-                />
-                <div style={{ fontSize: 11, color: cor.textoSecundario }}>
-                  {ocorrenciasHoje.length} ocorrência{ocorrenciasHoje.length !== 1 ? "s" : ""} de hoje ser{ocorrenciasHoje.length !== 1 ? "ão" : "á"} incluída{ocorrenciasHoje.length !== 1 ? "s" : ""}.
-                </div>
-                <button
-                  onClick={gerarEmail}
-                  disabled={gerandoEmail}
-                  style={{ width: "100%", background: "#22C55E", color: "#052E16", fontWeight: 700, fontSize: 14, borderRadius: 999, padding: "13px 0", opacity: gerandoEmail ? 0.6 : 1, boxShadow: "0 0 20px rgba(34,197,94,.3)" }}
-                >
-                  {gerandoEmail ? "Montando o relatório..." : "Gerar relatório de turno"}
-                </button>
-              </div>
-
-              {emailGerado && (
-                <div style={{ borderRadius: 26, padding: 16, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario }}>Relatório pronto</span>
-                    <button onClick={copiarEmail} style={{ fontSize: 12, color: cor.verdeNumero, fontWeight: 600 }}>
-                      {copiado ? "Copiado ✓" : "Copiar"}
-                    </button>
-                  </div>
-                  <textarea
-                    value={emailGerado}
-                    onChange={(e) => setEmailGerado(e.target.value)}
-                    aria-label="Mensagem pronta para WhatsApp"
-                    rows={12}
-                    style={{ width: "100%", fontSize: 13, color: cor.textoPrincipal, whiteSpace: "pre-wrap", lineHeight: 1.6, background: cor.inputBg, borderRadius: 14, padding: 12, border: `1px solid ${cor.inputBorda}`, resize: "vertical" }}
-                  />
-                  <button
-                    onClick={enviarWhatsApp}
-                    disabled={!emailGerado.trim()}
-                    style={{ width: "100%", marginTop: 12, background: "#fff", color: "#3b0764", fontWeight: 700, fontSize: 14, borderRadius: 999, padding: "13px 0", opacity: emailGerado.trim() ? 1 : 0.4 }}
-                  >
-                    Enviar por WhatsApp
-                  </button>
-                  <button onClick={fecharTurno} style={{ width: "100%", marginTop: 10, border: `1px solid ${cor.cartaoBorda}`, color: cor.textoSecundario, fontSize: 13, borderRadius: 999, padding: "10px 0" }}>
-                    Limpar turno (fechar)
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         )}
 
@@ -2539,10 +2414,30 @@ export default function App() {
           <div className="px-4 md:px-0 py-4 md:py-2" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario }}>Base de consulta</p>
-              <h2 style={{ fontFamily: "'Caprasimo', cursive", fontSize: 24 }}>Regulamento interno</h2>
+              <h2 style={{ fontFamily: "'Space Grotesk', 'Outfit', sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em" }}>Regulamento interno</h2>
               <p style={{ fontSize: 13, color: cor.textoSecundario, marginTop: 3, lineHeight: 1.5 }}>
-                O Regimento Interno (150 artigos) já vem carregado no app. Se ele mudar no futuro, suba o PDF atualizado abaixo — a IA lê o arquivo e extrai as normas de novo.
+                O Regimento Interno (150 artigos) já vem carregado no app. Se ele mudar no futuro, suba o PDF atualizado abaixo, a IA lê o arquivo e extrai as normas de novo.
               </p>
+            </div>
+
+            {/* Nome e posto: alimentam a identidade do assistente (ver
+                src/config/promptAssistente.js), por isso ficam aqui na configuração do app. */}
+            <div style={{ borderRadius: 22, padding: 14, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}` }}>
+              <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario, marginBottom: 8 }}>Seu perfil</p>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  value={nomeLider}
+                  onChange={(e) => { setNomeLider(e.target.value); salvarPerfil(e.target.value, posto); }}
+                  placeholder="Seu nome"
+                  style={{ background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, borderRadius: 14, padding: "10px 14px", fontSize: 13, color: cor.textoPrincipal }}
+                />
+                <input
+                  value={posto}
+                  onChange={(e) => { setPosto(e.target.value); salvarPerfil(nomeLider, e.target.value); }}
+                  placeholder="Posto / condomínio"
+                  style={{ background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, borderRadius: 14, padding: "10px 14px", fontSize: 13, color: cor.textoPrincipal }}
+                />
+              </div>
             </div>
 
             {/* Upload de PDF */}
@@ -2601,9 +2496,24 @@ export default function App() {
               />
               <button
                 onClick={salvarRegulamento}
-                style={{ width: "100%", marginTop: 10, background: "#22C55E", color: "#052E16", fontWeight: 700, fontSize: 14, borderRadius: 999, padding: "13px 0", boxShadow: "0 0 20px rgba(34,197,94,.3)" }}
+                disabled={regulamento === regulamentoTemp}
+                className="transition-all duration-200 active:scale-98"
+                style={{
+                  width: "100%",
+                  marginTop: 10,
+                  background: regulamento === regulamentoTemp ? cor.subBlocoVerde : cor.verde,
+                  border: regulamento === regulamentoTemp ? `1px solid ${cor.subBlocoVerdeBorda}` : "none",
+                  color: regulamento === regulamentoTemp ? cor.verdeNumero : cor.textoSobreVerde,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  borderRadius: 999,
+                  padding: "13px 0",
+                  boxShadow: regulamento === regulamentoTemp ? "none" : `0 0 20px ${cor.verde}`,
+                  cursor: regulamento === regulamentoTemp ? "default" : "pointer",
+                  opacity: regulamento === regulamentoTemp ? 0.85 : 1,
+                }}
               >
-                {regSalvo ? "Salvo ✓" : "Salvar regulamento"}
+                {regulamento === regulamentoTemp ? "Regulamento Salvo ✓" : "Salvar regulamento"}
               </button>
               {regulamento && (
                 <p style={{ fontSize: 11, color: cor.verdeNumero, marginTop: 8, textAlign: "center" }}>
@@ -2660,7 +2570,7 @@ export default function App() {
 
             <div>
               <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario }}>Base de consulta</p>
-              <h2 style={{ fontFamily: "'Caprasimo', cursive", fontSize: 24 }}>Convenção · vagas de estacionamento</h2>
+              <h2 style={{ fontFamily: "'Space Grotesk', 'Outfit', sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em" }}>Convenção · vagas de estacionamento</h2>
               <p style={{ fontSize: 13, color: cor.textoSecundario, marginTop: 3, lineHeight: 1.5 }}>
                 Suba o PDF da convenção do condomínio. A IA extrai o texto, incluindo a relação de vagas por apartamento/bloco, pra você consultar rápido quem é dono de qual vaga.
               </p>
@@ -2722,9 +2632,24 @@ export default function App() {
               />
               <button
                 onClick={salvarConvencao}
-                style={{ width: "100%", marginTop: 10, background: "#22C55E", color: "#052E16", fontWeight: 700, fontSize: 14, borderRadius: 999, padding: "13px 0", boxShadow: "0 0 20px rgba(34,197,94,.3)" }}
+                disabled={convencao === convencaoTemp}
+                className="transition-all duration-200 active:scale-98"
+                style={{
+                  width: "100%",
+                  marginTop: 10,
+                  background: convencao === convencaoTemp ? cor.subBlocoVerde : cor.verde,
+                  border: convencao === convencaoTemp ? `1px solid ${cor.subBlocoVerdeBorda}` : "none",
+                  color: convencao === convencaoTemp ? cor.verdeNumero : cor.textoSobreVerde,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  borderRadius: 999,
+                  padding: "13px 0",
+                  boxShadow: convencao === convencaoTemp ? "none" : `0 0 20px ${cor.verde}`,
+                  cursor: convencao === convencaoTemp ? "default" : "pointer",
+                  opacity: convencao === convencaoTemp ? 0.85 : 1,
+                }}
               >
-                {convSalvo ? "Salvo ✓" : "Salvar convenção"}
+                {convencao === convencaoTemp ? "Convenção Salva ✓" : "Salvar convenção"}
               </button>
               {convencao && (
                 <p style={{ fontSize: 11, color: cor.verdeNumero, marginTop: 8, textAlign: "center" }}>
@@ -2783,7 +2708,7 @@ export default function App() {
           <div className="px-4 md:px-0 py-4 md:py-2" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div>
               <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario }}>Nativ Tatuapé Garden</p>
-              <h2 style={{ fontFamily: "'Caprasimo', cursive", fontSize: 24 }}>Rotinas do condomínio</h2>
+              <h2 style={{ fontFamily: "'Space Grotesk', 'Outfit', sans-serif", fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em" }}>Rotinas do condomínio</h2>
               <p style={{ fontSize: 13, color: cor.textoSecundario, marginTop: 3, lineHeight: 1.5 }}>
                 Procedimentos da ronda diurna (07h–19h). Toque num bloco para abrir.
               </p>
@@ -2798,7 +2723,7 @@ export default function App() {
                 <span style={{ fontSize: 13, fontWeight: 700, color: cor.verdeNumero }}>{progressoRotinas}%</span>
               </div>
               <div style={{ marginTop: 8, height: 8, borderRadius: 999, background: "rgba(255,255,255,.14)", overflow: "hidden" }}>
-                <div style={{ width: `${progressoRotinas}%`, height: "100%", borderRadius: 999, background: "#22C55E", transition: "width .3s" }} />
+                <div style={{ width: `${progressoRotinas}%`, height: "100%", borderRadius: 999, background: cor.verde, transition: "width .3s" }} />
               </div>
             </div>
 
@@ -2910,10 +2835,63 @@ export default function App() {
         </div>
       )}
 
+      {/* Detalhe de uma ocorrência do histórico (foto ampliada + texto completo) */}
+      {ocorrenciaSelecionada && (
+        <div
+          onClick={() => setOcorrenciaSelecionada(null)}
+          className="fixed inset-0 z-50"
+          style={{ background: "rgba(0,0,0,.7)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%", maxWidth: 520, maxHeight: "85vh", overflowY: "auto",
+              background: tema === "light" ? "#FBFAFD" : "#1A0B2E",
+              borderRadius: "26px 26px 0 0", padding: "18px 18px 24px",
+              boxShadow: "0 -10px 40px rgba(0,0,0,.4)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
+              <button onClick={() => setOcorrenciaSelecionada(null)} style={{ color: cor.textoSecundario, display: "flex" }}>
+                <Icone nome="x" tamanho={18} />
+              </button>
+            </div>
+            {ocorrenciaSelecionada.imagem && (
+              <img
+                src={ocorrenciaSelecionada.imagem}
+                alt="Foto da ocorrência"
+                style={{ width: "100%", maxHeight: 340, objectFit: "contain", borderRadius: 16, marginBottom: 14, background: "rgba(0,0,0,.2)" }}
+              />
+            )}
+            <p style={{ fontSize: 15, lineHeight: 1.6, whiteSpace: "pre-wrap", color: cor.textoPrincipal }}>{ocorrenciaSelecionada.texto}</p>
+            {ocorrenciaSelecionada.regulamentoRef && (
+              <div style={{ marginTop: 12, borderLeft: "2px solid rgba(74,222,128,.5)", paddingLeft: 10, fontSize: 13, lineHeight: 1.4 }}>
+                <p style={{ color: cor.verdeNumero, fontWeight: 600, margin: 0 }}>{ocorrenciaSelecionada.regulamentoRef.artigo}</p>
+                <p style={{ color: cor.textoSecundario, margin: "2px 0 0" }}>{ocorrenciaSelecionada.regulamentoRef.resumo}</p>
+              </div>
+            )}
+            <button
+              onClick={() => copiarOcorrencia(ocorrenciaSelecionada)}
+              style={{ width: "100%", marginTop: 16, background: idCopiado === ocorrenciaSelecionada.id ? cor.subBlocoVerde : "#22C55E", color: idCopiado === ocorrenciaSelecionada.id ? cor.verdeNumero : "#052E16", fontWeight: 700, fontSize: 14, borderRadius: 999, padding: "13px 0" }}
+            >
+              {idCopiado === ocorrenciaSelecionada.id ? "Copiado ✓" : "Copiar texto"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Barra Flutuante de Voz (Modo Ronda Viva-Voz) */}
       <div
-        className="fixed bottom-14 md:bottom-0 inset-x-0 md:left-[268px] mx-auto max-w-md md:max-w-[1200px] z-20 px-3 md:px-8 py-2 md:py-3"
-        style={{ background: cor.navBg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: `1px solid ${cor.cartaoBorda}`, boxShadow: cor.navSombra }}
+        className="fixed z-30 transition-all duration-200 left-3 right-3 md:left-[275px] md:right-0 md:bottom-0 max-w-md md:max-w-[1200px] mx-auto p-2.5 md:px-8 md:py-3"
+        style={{
+          bottom: "calc(env(safe-area-inset-bottom, 0px) + 78px)",
+          background: cor.navBg,
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          border: `1px solid ${cor.cartaoBorda}`,
+          borderRadius: 22,
+          boxShadow: "0 10px 35px -5px rgba(0,0,0,0.45)",
+        }}
       >
         {erroVoz && (
           <p style={{ fontSize: 11, color: "#FCA5A5", marginBottom: 6, textAlign: "center", lineHeight: 1.4 }}>{erroVoz}</p>
@@ -2956,13 +2934,13 @@ export default function App() {
               gap: 8,
               fontWeight: 700,
               fontSize: 12,
-              background: gravando ? "rgba(248,113,113,.18)" : falando ? cor.subBlocoVerde : "#22C55E",
+              background: gravando ? "rgba(248,113,113,.18)" : falando ? cor.subBlocoVerde : cor.verde,
               border: gravando ? "1px solid rgba(248,113,113,.5)" : falando ? `1px solid ${cor.subBlocoVerdeBorda}` : "none",
-              color: gravando ? "#FCA5A5" : falando ? cor.verdeNumero : "#052E16",
-              boxShadow: !gravando && !falando ? "0 0 20px rgba(34,197,94,.3)" : "none",
+              color: gravando ? "#FCA5A5" : falando ? cor.verdeNumero : cor.textoSobreVerde,
+              boxShadow: !gravando && !falando ? `0 0 20px ${cor.verde}` : "none",
             }}
           >
-            <Icone nome="mic" tamanho={17} espessura={2.75} cor={gravando ? "#FCA5A5" : falando ? cor.verdeNumero : "#052E16"} />
+            <Icone nome="mic" tamanho={17} espessura={2.75} cor={gravando ? "#FCA5A5" : falando ? cor.verdeNumero : cor.textoSobreVerde} />
             {aba !== "consultar" && <span>{gravando ? "Ouvindo" : falando ? "Falando" : "Falar por Voz"}</span>}
           </button>
 
@@ -3041,9 +3019,9 @@ export default function App() {
               <button
                 onClick={() => enviarPergunta()}
                 disabled={(!pergunta.trim() && !fotoChat) || pensando}
-                style={{ flexShrink: 0, height: 44, width: 44, borderRadius: 999, background: "#22C55E", color: "#052E16", fontWeight: 700, opacity: (!pergunta.trim() && !fotoChat) || pensando ? 0.4 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{ flexShrink: 0, height: 44, width: 44, borderRadius: 999, background: cor.verde, color: cor.textoSobreVerde, fontWeight: 700, opacity: (!pergunta.trim() && !fotoChat) || pensando ? 0.4 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}
               >
-                <Icone nome="seta" tamanho={17} cor="#052E16" />
+                <Icone nome="seta" tamanho={17} cor={cor.textoSobreVerde} />
               </button>
             </div>
           ) : (
