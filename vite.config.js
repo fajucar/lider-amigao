@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // A API do Gemini não dá pra proxyar com o "server.proxy" declarativo (target+rewrite) que os
 // outros provedores usam: o modelo faz parte da URL (models/<modelo>:generateContent) e a
@@ -48,7 +49,7 @@ function gemeniDevProxyPlugin(env) {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
-    plugins: [react(), gemeniDevProxyPlugin(env)],
+    plugins: [basicSsl(), react(), gemeniDevProxyPlugin(env)],
     server: {
       host: '0.0.0.0',
       port: 5173,

@@ -1480,7 +1480,9 @@ export default function App() {
 
   const iniciarGravacao = async () => {
     if (!window.isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-      setErroVoz("O microfone exige HTTPS para funcionar no celular. Acesse pelo link seguro: https://lider-amigao.vercel.app/");
+      const port = window.location.port ? `:${window.location.port}` : "";
+      const localHttpsUrl = `https://${window.location.hostname}${port}/`;
+      setErroVoz(`O microfone no celular exige HTTPS. No Wi-Fi, acesse: ${localHttpsUrl} (e aceite o aviso do certificado) ou use a Vercel: https://lider-amigao.vercel.app/`);
       return;
     }
     if (!recognitionRef.current) {
