@@ -1904,6 +1904,8 @@ export default function App() {
       }
 
       setChat([...novo, { role: "assistant", content: textoMensagemChat }]);
+      // Se o usuário falou de outra aba, muda para Consultar para mostrar a resposta
+      setAba("consultar");
       setStatusVoz("");
 
       if (audioAtivoRef.current && respostaVoz) {
@@ -1944,6 +1946,8 @@ export default function App() {
       }
 
       setChat([...novo, { role: "assistant", content: mensagem }]);
+      // Se o usuário falou de outra aba, muda para Consultar para mostrar a resposta
+      setAba("consultar");
       setStatusVoz("");
     } finally {
       setPensando(false);
