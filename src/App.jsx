@@ -1197,6 +1197,9 @@ export default function App() {
   const [vozDisponivel, setVozDisponivel] = useState(false);
   const [erroVoz, setErroVoz] = useState("");
   const recognitionRef = useRef(null);
+  // Acumula o texto transcrito em tempo real via ref (não depende de ciclo de estado)
+  // para que pararGravacao leia o valor correto mesmo logo após recognition.stop().
+  const textoTranscritoRef = useRef("");
 
   // Viva-Voz e Áudio de Ronda
   const [audioAtivo, setAudioAtivo] = useState(true);
@@ -1478,7 +1481,8 @@ export default function App() {
       for (let i = 0; i < event.results.length; i++) {
         texto += event.results[i][0].transcript;
       }
-      // Só atualiza o campo de texto em tempo real (push-to-talk: envio acontece ao soltar o botão)
+      // Grava na ref (leitura imediata) E no estado (atualiza o campo de texto visível)
+      textoTranscritoRef.current = texto;
       setPergunta(texto);
     };
 
@@ -1521,6 +1525,7 @@ export default function App() {
     setFalando(false);
     setErroVoz("");
     setPergunta("");
+    textoTranscritoRef.current = "";
 
     // Solicita explicitamente a permissão de áudio para acionar a caixa de diálogo nativa do navegador
     try {
@@ -1547,16 +1552,13 @@ export default function App() {
       recognitionRef.current.stop();
     } catch (e) {}
     setGravando(false);
-    // Ao soltar o botão, pega o texto que foi transcrito e envia para a IA
-    setPergunta((textoAtual) => {
-      const finalTexto = textoAtual.trim();
-      if (finalTexto) {
-        setStatusVoz("Enviando...");
-        // Usa setTimeout para garantir que o estado já atualizou antes de enviar
-        setTimeout(() => enviarPergunta(finalTexto), 50);
-      }
-      return textoAtual;
-    });
+    // Lê o texto da ref (valor sempre atualizado, sem depender do ciclo de estado)
+    const finalTexto = textoTranscritoRef.current.trim();
+    textoTranscritoRef.current = "";
+    if (finalTexto) {
+      setStatusVoz("Enviando...");
+      enviarPergunta(finalTexto);
+    }
   };
 
   const fileToBase64 = (file) =>
