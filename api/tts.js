@@ -3,9 +3,9 @@
 // Recebe: POST { text: "..." }
 // Retorna: stream de áudio audio/mpeg
 
-const { MsEdgeTTS, OUTPUT_FORMAT } = require("msedge-tts");
+import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Método não permitido." });
     return;
@@ -42,4 +42,4 @@ module.exports = async function handler(req, res) {
       res.status(500).json({ error: err.message || "Erro interno no TTS." });
     }
   }
-};
+}
