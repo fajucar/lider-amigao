@@ -1463,7 +1463,7 @@ export default function App() {
     }
     const recognition = new SpeechRecognition();
     recognition.lang = "pt-BR";
-    recognition.continuous = false;
+    recognition.continuous = true;  // push-to-talk: só para quando o botão for solto
     recognition.interimResults = true;
 
     recognition.onstart = () => {
@@ -1478,16 +1478,8 @@ export default function App() {
       for (let i = 0; i < event.results.length; i++) {
         texto += event.results[i][0].transcript;
       }
+      // Só atualiza o campo de texto em tempo real (push-to-talk: envio acontece ao soltar o botão)
       setPergunta(texto);
-
-      if (event.results[0] && event.results[0].isFinal) {
-        const finalTexto = texto.trim();
-        if (finalTexto) {
-          setGravando(false);
-          setStatusVoz("Enviando...");
-          enviarPergunta(finalTexto);
-        }
-      }
     };
 
     recognition.onend = () => {
@@ -1555,6 +1547,16 @@ export default function App() {
       recognitionRef.current.stop();
     } catch (e) {}
     setGravando(false);
+    // Ao soltar o botão, pega o texto que foi transcrito e envia para a IA
+    setPergunta((textoAtual) => {
+      const finalTexto = textoAtual.trim();
+      if (finalTexto) {
+        setStatusVoz("Enviando...");
+        // Usa setTimeout para garantir que o estado já atualizou antes de enviar
+        setTimeout(() => enviarPergunta(finalTexto), 50);
+      }
+      return textoAtual;
+    });
   };
 
   const fileToBase64 = (file) =>
@@ -2948,17 +2950,20 @@ export default function App() {
         )}
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {/* Botão Principal de Microfone */}
+          {/* Botão Principal de Microfone — push-to-talk: segura para falar, solta para enviar */}
           <button
             type="button"
-            onClick={() => {
-              if (gravando) {
-                pararGravacao();
-              } else {
-                iniciarGravacao();
-              }
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId);
+              // Para o áudio da Amigona se estiver falando antes de começar a ouvir
+              if (audioAtualRef.current) { audioAtualRef.current.pause(); audioAtualRef.current = null; setFalando(false); }
+              if (window.speechSynthesis) window.speechSynthesis.cancel();
+              iniciarGravacao();
             }}
-            title={gravando ? "Ouvindo" : falando ? "Assistente falando" : "Falar por voz"}
+            onPointerUp={() => { if (gravando) pararGravacao(); }}
+            onPointerLeave={() => { if (gravando) pararGravacao(); }}
+            onPointerCancel={() => { if (gravando) pararGravacao(); }}
+            title={gravando ? "Solta para enviar" : falando ? "Assistente falando" : "Segure para falar"}
             style={{
               flexShrink: 0,
               height: 44,
@@ -2971,6 +2976,9 @@ export default function App() {
               gap: 8,
               fontWeight: 700,
               fontSize: 12,
+              userSelect: "none",
+              WebkitUserSelect: "none",
+              touchAction: "none",
               background: gravando ? "rgba(248,113,113,.18)" : falando ? cor.subBlocoVerde : cor.verde,
               border: gravando ? "1px solid rgba(248,113,113,.5)" : falando ? `1px solid ${cor.subBlocoVerdeBorda}` : "none",
               color: gravando ? "#FCA5A5" : falando ? cor.verdeNumero : cor.textoSobreVerde,
@@ -2978,7 +2986,7 @@ export default function App() {
             }}
           >
             <Icone nome="mic" tamanho={17} espessura={2.75} cor={gravando ? "#FCA5A5" : falando ? cor.verdeNumero : cor.textoSobreVerde} />
-            {aba !== "consultar" && <span>{gravando ? "Ouvindo" : falando ? "Falando" : "Falar por Voz"}</span>}
+            {aba !== "consultar" && <span>{gravando ? "Ouvindo..." : falando ? "Falando" : "Segure p/ Falar"}</span>}
           </button>
 
           {/* Alternar Modo Viva-Voz Contínuo */}
