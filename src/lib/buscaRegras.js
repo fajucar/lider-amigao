@@ -132,9 +132,9 @@ export function buscarArtigosRelevantes(pergunta, regras, { limite = 6 } = {}) {
   }));
 }
 
-// Referência curta pra citar a fonte, ex.: "RI, Capítulo IV, Art. 37º".
+// Referência curta pra citar a fonte, ex.: "Regulamento Interno, Capítulo IV, Art. 37º".
 export function citacaoCurta(regra) {
-  const nomeFonte = regra.fonte === "Convenção" ? "Convenção" : "RI";
+  const nomeFonte = regra.fonte === "Convenção" ? "Convenção" : "Regulamento Interno";
   const cap = regra.capitulo?.numero ? `Capítulo ${regra.capitulo.numero}` : null;
   return [nomeFonte, cap, `Art. ${regra.artigo}º`].filter(Boolean).join(", ");
 }
