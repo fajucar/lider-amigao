@@ -1202,6 +1202,8 @@ export default function App() {
   const textoTranscritoRef = useRef("");
   // Controla se o botão ainda está pressionado dentro do onend do recognition
   const gravandoRef = useRef(false);
+  // Instância ativa do recognition (criada a cada gravação)
+  const activeRecognitionRef = useRef(null);
 
   // Viva-Voz e Áudio de Ronda
   const [audioAtivo, setAudioAtivo] = useState(true);
@@ -1470,51 +1472,8 @@ export default function App() {
       );
       return;
     }
-    const recognition = new SpeechRecognition();
-    recognition.lang = "pt-BR";
-    recognition.continuous = true;  // push-to-talk: só para quando o botão for solto
-    recognition.interimResults = true;
-
-    recognition.onstart = () => {
-      setGravando(true);
-      setErroVoz("");
-      setStatusVoz("Ouvindo... Pode falar!");
-    };
-
-    recognition.onresult = (event) => {
-      setErroVoz("");
-      // Com continuous=true, event.results acumula todos os fragmentos da sessão.
-      // Usamos resultIndex para pegar só o que chegou agora e somar ao acumulado da ref,
-      // evitando duplicação ("boaboa noiteboa noite...").
-      let novosFragmentos = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        novosFragmentos += event.results[i][0].transcript;
-      }
-      const textoAtualizado = textoTranscritoRef.current + novosFragmentos;
-      textoTranscritoRef.current = textoAtualizado;
-      setPergunta(textoAtualizado);
-    };
-
-    recognition.onend = () => {
-      setGravando(false);
-    };
-
-    recognition.onerror = (event) => {
-      setGravando(false);
-      setStatusVoz("");
-      const mensagens = {
-        "not-allowed": "Permissão do microfone negada. Toque no ícone de cadeado 🔒 ao lado do site na barra de endereço e altere para PERMITIR o microfone.",
-        "service-not-allowed": "Permissão de microfone bloqueada pelas configurações do seu navegador.",
-        "no-speech": "Não ouvi nenhuma fala. Toque no microfone e tente falar novamente.",
-        "audio-capture": "Nenhum microfone encontrado neste dispositivo.",
-        "network": "Erro de conexão de rede no reconhecimento de voz.",
-        aborted: "",
-      };
-      const msg = mensagens[event.error];
-      if (msg) setErroVoz(msg);
-    };
-
-    recognitionRef.current = recognition;
+    // Guarda a classe, não a instância — cada gravação cria uma instância nova
+    recognitionRef.current = SpeechRecognition;
     setVozDisponivel(true);
   }, []);
 
@@ -1529,44 +1488,105 @@ export default function App() {
       if (!erroVoz) setErroVoz("Reconhecimento de voz indisponível neste navegador. Recomendamos usar o Google Chrome ou Edge.");
       return;
     }
-    if (gravando || pensandoRef.current) return;
+    if (gravandoRef.current || pensandoRef.current) return;
+
+    // Para áudio da Amigona se estiver falando
+    if (audioAtualRef.current) { audioAtualRef.current.pause(); audioAtualRef.current = null; }
     if (window.speechSynthesis) window.speechSynthesis.cancel();
     setFalando(false);
     setErroVoz("");
     setPergunta("");
     textoTranscritoRef.current = "";
-    gravandoRef.current = true;
 
-    // Solicita explicitamente a permissão de áudio para acionar a caixa de diálogo nativa do navegador
+    // Pede permissão só na primeira vez (depois o browser já tem a permissão em cache)
     try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      if (navigator.mediaDevices?.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((track) => track.stop());
+        stream.getTracks().forEach((t) => t.stop());
       }
     } catch (err) {
-      console.warn("Permissão de microfone não concedida pelo usuário:", err);
-      setErroVoz("Permissão do microfone negada. Clique no ícone de cadeado 🔒 na barra de endereço e escolha 'Permitir'.");
+      setErroVoz("Permissão do microfone negada. Toque no cadeado 🔒 na barra de endereço e escolha 'Permitir'.");
       return;
     }
 
+    // Cria uma instância NOVA a cada gravação — evita estado sujo de sessões anteriores
+    const SpeechRecognition = recognitionRef.current;
+    const rec = new SpeechRecognition();
+    rec.lang = "pt-BR";
+    rec.continuous = true;      // mantém o microfone aberto enquanto o botão estiver pressionado
+    rec.interimResults = true;  // mostra texto em tempo real
+    rec.maxAlternatives = 1;
+
+    rec.onstart = () => {
+      setGravando(true);
+      gravandoRef.current = true;
+      setErroVoz("");
+      setStatusVoz("Ouvindo... Pode falar!");
+    };
+
+    rec.onresult = (event) => {
+      setErroVoz("");
+      // Reconstrói o texto completo a partir de TODOS os resultados finais
+      // mais o interim atual — evita duplicação independente do comportamento do browser
+      let textoFinal = "";
+      let textoInterim = "";
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          textoFinal += event.results[i][0].transcript + " ";
+        } else {
+          textoInterim += event.results[i][0].transcript;
+        }
+      }
+      const textoCompleto = (textoFinal + textoInterim).trim();
+      textoTranscritoRef.current = textoFinal.trim(); // só os finais vão ser enviados
+      setPergunta(textoCompleto);
+    };
+
+    rec.onend = () => {
+      // Se o botão ainda está pressionado, reinicia para manter o microfone aberto
+      if (gravandoRef.current) {
+        try { rec.start(); } catch (e) {}
+      } else {
+        setGravando(false);
+      }
+    };
+
+    rec.onerror = (event) => {
+      if (event.error === "aborted") return; // abortamos nós mesmos ao soltar o botão
+      gravandoRef.current = false;
+      setGravando(false);
+      setStatusVoz("");
+      const mensagens = {
+        "not-allowed": "Permissão do microfone negada. Toque no cadeado 🔒 e escolha 'Permitir'.",
+        "service-not-allowed": "Permissão de microfone bloqueada pelo navegador.",
+        "no-speech": "",
+        "audio-capture": "Nenhum microfone encontrado.",
+        "network": "Erro de rede no reconhecimento de voz.",
+      };
+      const msg = mensagens[event.error];
+      if (msg) setErroVoz(msg);
+    };
+
+    // Guarda a instância ativa para pararGravacao poder chamar stop()
+    activeRecognitionRef.current = rec;
     try {
-      recognitionRef.current.start();
+      rec.start();
     } catch (e) {
-      console.error("Erro ao iniciar reconhecimento:", e);
+      console.error("Erro ao iniciar recognition:", e);
     }
   };
 
   const pararGravacao = () => {
-    if (!recognitionRef.current) return;
-    // Marca como não-gravando ANTES de stop() para que onend não reinicie
     gravandoRef.current = false;
     setGravando(false);
-    try {
-      recognitionRef.current.stop();
-    } catch (e) {}
-    // Lê o texto da ref (valor sempre atualizado, sem depender do ciclo de estado)
+    if (activeRecognitionRef.current) {
+      try { activeRecognitionRef.current.stop(); } catch (e) {}
+      activeRecognitionRef.current = null;
+    }
+    // Pega o texto dos resultados FINAIS acumulados
     const finalTexto = textoTranscritoRef.current.trim();
     textoTranscritoRef.current = "";
+    setPergunta("");
     if (finalTexto) {
       setStatusVoz("Enviando...");
       enviarPergunta(finalTexto);
