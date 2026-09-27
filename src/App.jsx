@@ -1200,6 +1200,8 @@ export default function App() {
   // Acumula o texto transcrito em tempo real via ref (não depende de ciclo de estado)
   // para que pararGravacao leia o valor correto mesmo logo após recognition.stop().
   const textoTranscritoRef = useRef("");
+  // Controla se o botão ainda está pressionado dentro do onend do recognition
+  const gravandoRef = useRef(false);
 
   // Viva-Voz e Áudio de Ronda
   const [audioAtivo, setAudioAtivo] = useState(true);
@@ -1215,6 +1217,10 @@ export default function App() {
   useEffect(() => {
     modoVivaVozRef.current = modoVivaVoz;
   }, [modoVivaVoz]);
+
+  useEffect(() => {
+    gravandoRef.current = gravando;
+  }, [gravando]);
 
   useEffect(() => {
     pensandoRef.current = pensando;
@@ -1529,6 +1535,7 @@ export default function App() {
     setErroVoz("");
     setPergunta("");
     textoTranscritoRef.current = "";
+    gravandoRef.current = true;
 
     // Solicita explicitamente a permissão de áudio para acionar a caixa de diálogo nativa do navegador
     try {
@@ -1551,10 +1558,12 @@ export default function App() {
 
   const pararGravacao = () => {
     if (!recognitionRef.current) return;
+    // Marca como não-gravando ANTES de stop() para que onend não reinicie
+    gravandoRef.current = false;
+    setGravando(false);
     try {
       recognitionRef.current.stop();
     } catch (e) {}
-    setGravando(false);
     // Lê o texto da ref (valor sempre atualizado, sem depender do ciclo de estado)
     const finalTexto = textoTranscritoRef.current.trim();
     textoTranscritoRef.current = "";
