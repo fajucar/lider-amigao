@@ -1846,7 +1846,7 @@ export default function App() {
       // os artigos mais relevantes pra esta mensagem, em src/data/regras.json (RI + Convenção já
       // extraídos dos PDFs e estruturados por capítulo/artigo), e mandamos só isso pra IA — com a
       // citação exata (fonte, capítulo, artigo) já pronta, pra IA não ter que adivinhar.
-      const { contexto: contextoRegras } = montarContextoRegras(q, regrasCondominio, { limite: 6 });
+      const { contexto: contextoRegras } = montarContextoRegras(q, regrasCondominio, { limite: 8 });
       // Convenção ainda não estruturada (PDF escaneado, sem texto selecionável) cai aqui: se o
       // operador tiver colado/enviado manualmente o texto na aba Regras, ainda buscamos nele.
       const temConvencaoEstruturada = regrasCondominio.some((r) => r.fonte === "Convenção");
