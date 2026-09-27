@@ -1477,13 +1477,16 @@ export default function App() {
 
     recognition.onresult = (event) => {
       setErroVoz("");
-      let texto = "";
-      for (let i = 0; i < event.results.length; i++) {
-        texto += event.results[i][0].transcript;
+      // Com continuous=true, event.results acumula todos os fragmentos da sessão.
+      // Usamos resultIndex para pegar só o que chegou agora e somar ao acumulado da ref,
+      // evitando duplicação ("boaboa noiteboa noite...").
+      let novosFragmentos = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        novosFragmentos += event.results[i][0].transcript;
       }
-      // Grava na ref (leitura imediata) E no estado (atualiza o campo de texto visível)
-      textoTranscritoRef.current = texto;
-      setPergunta(texto);
+      const textoAtualizado = textoTranscritoRef.current + novosFragmentos;
+      textoTranscritoRef.current = textoAtualizado;
+      setPergunta(textoAtualizado);
     };
 
     recognition.onend = () => {
