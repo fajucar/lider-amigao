@@ -1887,8 +1887,12 @@ export default function App() {
         respostaVoz = typeof parsed.respostaVoz === "string" ? parsed.respostaVoz.trim() : "";
         if (!respostaVoz) throw new Error("Resposta vazia");
         textoMensagemChat = respostaVoz;
-        if (parsed.ocorrencia && parsed.ocorrencia.detectada && parsed.ocorrencia.texto) {
-          ocDetectada = parsed.ocorrencia;
+        if (parsed.ocorrencia && parsed.ocorrencia.detectada) {
+          // Suporta tanto o formato novo (titulo/local/descricao/providencia) quanto o antigo (texto)
+          const oc = parsed.ocorrencia;
+          if (oc.descricao || oc.texto) {
+            ocDetectada = oc;
+          }
         }
       } catch (eJson) {
         console.warn("Resposta da IA fora do formato esperado:", eJson);
@@ -1897,16 +1901,43 @@ export default function App() {
 
       if (ocDetectada) {
         const cat = ocDetectada.categoria || "outros";
-        // Busca usando o texto BRUTO digitado + o resumo da IA, não só o resumo: o resumo às
-        // vezes generaliza a descrição e perde palavras específicas (ex: "vaga", "circulação")
-        // que são justamente o que a busca por palavra-chave no regulamento precisa.
-        const regulamentoRef = await buscarReferenciaRegulamento(`${q}\n${ocDetectada.texto}`);
+        // Monta o texto no modelo estruturado com emojis
+        const oc = ocDetectada;
+        const horaAtual = fmtHora(Date.now());
+        let textoEstruturado;
+        if (oc.titulo || oc.descricao) {
+          // Formato novo com campos separados
+          const linhas = [
+            `📋 OCORRÊNCIA — ${oc.titulo || "Ocorrência registrada"}`,
+            ``,
+            `🕐 Horário: ${horaAtual}`,
+            `📍 Local: ${oc.local || "Não informado"}`,
+            `📝 Descrição: ${oc.descricao || oc.texto}`,
+          ];
+          if (oc.providencia && oc.providencia !== "[a preencher]") {
+            linhas.push(`✅ Providência: ${oc.providencia}`);
+          } else {
+            linhas.push(`✅ Providência: [a preencher]`);
+          }
+          textoEstruturado = linhas.join("\n");
+        } else {
+          // Fallback para formato antigo
+          textoEstruturado = oc.texto || "";
+        }
+
+        // Busca usando o texto BRUTO digitado + o resumo da IA para encontrar a base legal
+        const regulamentoRef = await buscarReferenciaRegulamento(`${q}\n${textoEstruturado}`);
         const catObj = catInfo(cat);
-        const textoComReferencia = `${ocDetectada.texto}\n\n${linhaReferenciaRegulamento(regulamentoRef)}`;
+
+        // Adiciona a base legal ao texto se encontrada
+        const textoComBase = regulamentoRef && regulamentoRef.artigo !== "Não encontrado"
+          ? `${textoEstruturado}\n📖 Base: ${regulamentoRef.artigo} — ${regulamentoRef.resumo}`
+          : textoEstruturado;
+
         textoMensagemChat = `${textoMensagemChat}\n\n📌 *Ocorrência pronta para confirmação em ${catObj.label}*\n${linhaReferenciaRegulamento(regulamentoRef)}`;
 
         setToastOcorrencia({
-          texto: textoComReferencia,
+          texto: textoComBase,
           categoria: cat,
           regulamentoRef,
           imagem: foto || "",
@@ -2058,12 +2089,14 @@ export default function App() {
       }
 
       const linhas = [
-        `OCORRÊNCIA: ${tipo}`,
-        `Horário: ${fmtHora(Date.now())}`,
-        `Local: ${local}`,
-        `Descrição: ${descricaoOrganizada}`,
+        `📋 OCORRÊNCIA — ${tipo}`,
+        ``,
+        `🕐 Horário: ${fmtHora(Date.now())}`,
+        `📍 Local: ${local}`,
+        `📝 Descrição: ${descricaoOrganizada}`,
+        `✅ Providência: [a preencher]`,
       ];
-      if (melhorArtigo) linhas.push(`Base: ${citacaoCurta(melhorArtigo)}`);
+      if (melhorArtigo) linhas.push(`📖 Base: ${citacaoCurta(melhorArtigo)} — ${melhorArtigo.texto.slice(0, 120)}${melhorArtigo.texto.length > 120 ? "..." : ""}`);
 
       const nova = {
         id: Date.now(),

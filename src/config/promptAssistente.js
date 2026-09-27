@@ -40,7 +40,10 @@ export function montarSystemPrompt({ nomeOperador, contextoRegras, trechoConvenc
     '  "respostaVoz": "Resposta curta, direta e natural em português (1 a 2 frases), sem travessão, pronta pra ser lida em viva-voz no celular",\n' +
     '  "ocorrencia": {\n' +
     '    "detectada": true ou false,\n' +
-    '    "texto": "Resumo limpo e profissional da ocorrência para salvar no sistema, preservando os detalhes concretos citados (o que aconteceu, onde, com o quê)",\n' +
+    '    "titulo": "2 a 5 palavras descrevendo o tipo da ocorrência (ex.: Dejeto de animal no jardim)",\n' +
+    '    "local": "onde aconteceu, conforme descrito pelo usuário (ex.: Jardim atrás da churrasqueira 2)",\n' +
+    '    "descricao": "Descrição clara, objetiva e profissional do fato: o que aconteceu, onde exatamente, quem estava envolvido, detalhes relevantes. Preserva todos os fatos concretos citados.",\n' +
+    '    "providencia": "O que foi feito ou recomendado pelo líder. Se o usuário não informou, escreva: [a preencher]",\n' +
     '    "categoria": "acesso" ou "encomenda" ou "manutencao" ou "seguranca" ou "outros"\n' +
     "  }\n" +
     "}\n\n" +
