@@ -761,22 +761,25 @@ const ROTINAS = [
   },
 ];
 
-// Texto corrido das rotinas acima, enviado à IA no chat (antes ela só recebia o RI/Convenção
-// e respondia "não encontrei" pra pergunta de rotina, horário, senha etc.).
-const TEXTO_PROCEDIMENTOS = [
-  "Horários-chave:",
-  ...ROTINAS_HORARIOS.map((h) => `- ${h.hora}: ${h.texto}`),
-  ...ROTINAS.map((sec) =>
-    [
-      `\n${sec.titulo}:`,
-      ...sec.grupos.flatMap((g) => [
-        ...(g.destaque ? [`- ${g.destaque}`] : []),
-        ...(g.sub ? [`  ${g.sub}:`] : []),
-        ...g.itens.map((it) => `- ${it}`),
-      ]),
-    ].join("\n")
-  ),
-].join("\n");
+// Texto corrido das rotinas (as editadas pelo usuário, ou as padrão acima), enviado à IA no
+// chat (antes ela só recebia o RI/Convenção e respondia "não encontrei" pra pergunta de
+// rotina, horário, senha etc.).
+function montarTextoProcedimentos(horarios, rotinas) {
+  return [
+    "Horários-chave:",
+    ...horarios.map((h) => `- ${h.hora}: ${h.texto}`),
+    ...rotinas.map((sec) =>
+      [
+        `\n${sec.titulo}:`,
+        ...sec.grupos.flatMap((g) => [
+          ...(g.destaque ? [`- ${g.destaque}`] : []),
+          ...(g.sub ? [`  ${g.sub}:`] : []),
+          ...g.itens.map((it) => `- ${it}`),
+        ]),
+      ].join("\n")
+    ),
+  ].join("\n");
+}
 
 function hojeISO() {
   const d = new Date();
@@ -912,6 +915,8 @@ const ICONE_PATHS = {
   busca: { circles: [[11, 11, 7]], path: "M21 21l-4.3-4.3" },
   setaBaixo: { path: "M6 9l6 6 6-6" },
   escudo: { path: "M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z" },
+  lapis: { path: "M12 20h9|M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" },
+  lixeira: { path: "M3 6h18|M8 6V4h8v2|M6 6l1 15h10l1-15|M10 11v6M14 11v6" },
 };
 
 function Icone({ nome, tamanho = 20, espessura = 2.75, cor = "currentColor", style }) {
@@ -996,7 +1001,7 @@ function tokensTema(tema) {
   };
 }
 
-function RotinaCard({ sec, cor, aberto, concluida, onToggleAberto, onToggleConcluida }) {
+function RotinaCard({ sec, cor, aberto, concluida, onToggleAberto, onToggleConcluida, onEditar }) {
   return (
     <div style={{ borderRadius: 22, overflow: "hidden", background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
@@ -1056,9 +1061,205 @@ function RotinaCard({ sec, cor, aberto, concluida, onToggleAberto, onToggleConcl
               )}
             </div>
           ))}
+          {onEditar && (
+            <button
+              type="button"
+              onClick={onEditar}
+              style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, marginTop: 2, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, color: cor.verdeNumero, border: `1px solid ${cor.cartaoBorda}` }}
+            >
+              <Icone nome="lapis" tamanho={13} /> Editar
+            </button>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+// ---------- Janelas de edição das rotinas (bottom sheet) ----------
+// Ficam no nível do módulo (não dentro de App) pra os campos não perderem o foco a cada letra.
+function JanelaEdicao({ cor, tema, titulo, onFechar, children, rodape }) {
+  return (
+    // Tocar fora NÃO fecha (evita perder o que foi digitado sem querer): só o X ou Salvar.
+    <div className="fixed inset-0 z-50" style={{ background: "rgba(0,0,0,.7)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div
+        style={{
+          width: "100%", maxWidth: 520, maxHeight: "90vh", display: "flex", flexDirection: "column",
+          background: tema === "light" ? "#FFFDFA" : "#151022",
+          borderRadius: "26px 26px 0 0", boxShadow: "0 -10px 40px rgba(0,0,0,.4)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 8px" }}>
+          <h3 style={{ fontSize: 17, fontWeight: 700, color: cor.textoPrincipal }}>{titulo}</h3>
+          <button type="button" onClick={onFechar} aria-label="Fechar" style={{ color: cor.textoSecundario, display: "flex" }}>
+            <Icone nome="x" tamanho={18} />
+          </button>
+        </div>
+        <div style={{ overflowY: "auto", padding: "4px 18px 12px", display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+        <div style={{ padding: "10px 18px calc(env(safe-area-inset-bottom, 0px) + 16px)", borderTop: `1px solid ${cor.cartaoBorda}` }}>{rodape}</div>
+      </div>
+    </div>
+  );
+}
+
+function estiloCampo(cor) {
+  return { width: "100%", borderRadius: 12, padding: "9px 12px", fontSize: 14, background: cor.inputBg, border: `1px solid ${cor.inputBorda}`, color: cor.textoPrincipal, outline: "none" };
+}
+
+function rotuloCampo(cor) {
+  return { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: cor.textoSecundario, fontWeight: 700, marginBottom: 4, display: "block" };
+}
+
+// Edita um bloco de rotina: ícone, título e grupos (subtítulo + destaque + itens, um por linha).
+// sec = null cria um bloco novo.
+function EditorRotina({ cor, tema, sec, onSalvar, onExcluir, onFechar }) {
+  const [icon, setIcon] = useState(sec?.icon || "📌");
+  const [titulo, setTitulo] = useState(sec?.titulo || "");
+  const [grupos, setGrupos] = useState(() =>
+    (sec?.grupos?.length ? sec.grupos : [{ itens: [] }]).map((g) => ({ sub: g.sub || "", destaque: g.destaque || "", texto: g.itens.join("\n") }))
+  );
+  const [erro, setErro] = useState("");
+
+  const mudarGrupo = (i, campo, valor) => setGrupos(grupos.map((g, gi) => (gi === i ? { ...g, [campo]: valor } : g)));
+
+  const salvar = () => {
+    if (!titulo.trim()) {
+      setErro("Dê um título para a rotina.");
+      return;
+    }
+    const gruposLimpos = grupos
+      .map((g) => ({
+        ...(g.sub.trim() ? { sub: g.sub.trim() } : {}),
+        ...(g.destaque.trim() ? { destaque: g.destaque.trim() } : {}),
+        itens: g.texto.split("\n").map((l) => l.trim()).filter(Boolean),
+      }))
+      .filter((g) => g.sub || g.destaque || g.itens.length);
+    onSalvar({
+      id: sec?.id || `rotina_${Date.now()}`,
+      icon: icon.trim() || "📌",
+      titulo: titulo.trim(),
+      grupos: gruposLimpos.length ? gruposLimpos : [{ itens: [] }],
+    });
+  };
+
+  const campo = estiloCampo(cor);
+  const rotulo = rotuloCampo(cor);
+  return (
+    <JanelaEdicao
+      cor={cor}
+      tema={tema}
+      titulo={sec ? "Editar rotina" : "Nova rotina"}
+      onFechar={onFechar}
+      rodape={
+        <div style={{ display: "flex", gap: 8 }}>
+          {sec && (
+            <button
+              type="button"
+              onClick={() => { if (window.confirm(`Apagar a rotina "${sec.titulo}"?`)) onExcluir(sec.id); }}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "11px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600, color: "#FCA5A5", border: "1px solid rgba(248,113,113,.4)" }}
+            >
+              <Icone nome="lixeira" tamanho={15} /> Apagar
+            </button>
+          )}
+          <button type="button" onClick={salvar} style={{ flex: 1, padding: "11px 0", borderRadius: 999, fontSize: 14, fontWeight: 700, background: cor.verde, color: cor.textoSobreVerde }}>
+            Salvar
+          </button>
+        </div>
+      }
+    >
+      {erro && <p style={{ fontSize: 12, color: "#FCA5A5" }}>{erro}</p>}
+      <div style={{ display: "flex", gap: 8 }}>
+        <label style={{ width: 64 }}>
+          <span style={rotulo}>Ícone</span>
+          <input value={icon} onChange={(e) => setIcon(e.target.value)} maxLength={4} style={{ ...campo, textAlign: "center", fontSize: 18 }} />
+        </label>
+        <label style={{ flex: 1 }}>
+          <span style={rotulo}>Título</span>
+          <input value={titulo} onChange={(e) => { setTitulo(e.target.value); setErro(""); }} placeholder="Ex.: Início do plantão" style={campo} />
+        </label>
+      </div>
+
+      {grupos.map((g, i) => (
+        <div key={i} style={{ borderRadius: 16, padding: 12, border: `1px solid ${cor.cartaoBorda}`, display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: cor.verdeNumero }}>Grupo {i + 1}</span>
+            {grupos.length > 1 && (
+              <button type="button" onClick={() => setGrupos(grupos.filter((_, gi) => gi !== i))} style={{ fontSize: 12, color: "#FCA5A5", display: "flex", alignItems: "center", gap: 4 }}>
+                <Icone nome="lixeira" tamanho={13} /> Remover grupo
+              </button>
+            )}
+          </div>
+          <label>
+            <span style={rotulo}>Subtítulo (opcional)</span>
+            <input value={g.sub} onChange={(e) => mudarGrupo(i, "sub", e.target.value)} placeholder="Ex.: Prestadores da Enel" style={campo} />
+          </label>
+          <label>
+            <span style={rotulo}>Destaque (opcional, ex.: senha)</span>
+            <input value={g.destaque} onChange={(e) => mudarGrupo(i, "destaque", e.target.value)} placeholder="Ex.: Senha das portas: 1809" style={campo} />
+          </label>
+          <label>
+            <span style={rotulo}>Itens (um por linha)</span>
+            <textarea
+              value={g.texto}
+              onChange={(e) => mudarGrupo(i, "texto", e.target.value)}
+              rows={Math.min(10, Math.max(3, g.texto.split("\n").length + 1))}
+              placeholder={"Ex.:\nRetirar a chave nº 54.\nAbrir a quadra de tênis."}
+              style={{ ...campo, resize: "vertical", lineHeight: 1.45 }}
+            />
+          </label>
+        </div>
+      ))}
+
+      <button
+        type="button"
+        onClick={() => setGrupos([...grupos, { sub: "", destaque: "", texto: "" }])}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 14, fontSize: 13, fontWeight: 600, color: cor.verdeNumero, border: `1px dashed ${cor.cartaoBorda}` }}
+      >
+        <Icone nome="mais" tamanho={15} /> Adicionar grupo
+      </button>
+    </JanelaEdicao>
+  );
+}
+
+// Edita a lista de Horários-chave (hora + texto), com adicionar/remover linha.
+function EditorHorarios({ cor, tema, horarios, onSalvar, onFechar }) {
+  const [linhas, setLinhas] = useState(() => horarios.map((h) => ({ ...h })));
+  const mudar = (i, campo, valor) => setLinhas(linhas.map((l, li) => (li === i ? { ...l, [campo]: valor } : l)));
+  const campo = estiloCampo(cor);
+
+  return (
+    <JanelaEdicao
+      cor={cor}
+      tema={tema}
+      titulo="Editar horários-chave"
+      onFechar={onFechar}
+      rodape={
+        <button
+          type="button"
+          onClick={() => onSalvar(linhas.map((l) => ({ hora: l.hora.trim(), texto: l.texto.trim() })).filter((l) => l.hora || l.texto))}
+          style={{ width: "100%", padding: "11px 0", borderRadius: 999, fontSize: 14, fontWeight: 700, background: cor.verde, color: cor.textoSobreVerde }}
+        >
+          Salvar
+        </button>
+      }
+    >
+      {linhas.map((l, i) => (
+        <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+          <input value={l.hora} onChange={(e) => mudar(i, "hora", e.target.value)} placeholder="07h00" style={{ ...campo, width: 86, flexShrink: 0 }} />
+          <textarea value={l.texto} onChange={(e) => mudar(i, "texto", e.target.value)} rows={2} placeholder="O que fazer" style={{ ...campo, flex: 1, resize: "vertical", lineHeight: 1.4 }} />
+          <button type="button" onClick={() => setLinhas(linhas.filter((_, li) => li !== i))} aria-label="Remover horário" style={{ color: "#FCA5A5", padding: "10px 4px", display: "flex" }}>
+            <Icone nome="lixeira" tamanho={16} />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => setLinhas([...linhas, { hora: "", texto: "" }])}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 14, fontSize: 13, fontWeight: 600, color: cor.verdeNumero, border: `1px dashed ${cor.cartaoBorda}` }}
+      >
+        <Icone nome="mais" tamanho={15} /> Adicionar horário
+      </button>
+    </JanelaEdicao>
   );
 }
 
@@ -1185,6 +1386,12 @@ export default function App() {
   const [tema, setTema] = useState("dark");
   const [rotinaAberta, setRotinaAberta] = useState(null);
   const [rotinasConcluidas, setRotinasConcluidas] = useState([]);
+  // Rotinas e horários editáveis (aba Rotinas). Começam com os padrões do código; se o usuário
+  // editar, a versão dele fica salva e passa a valer (inclusive pro que a IA sabe).
+  const [rotinas, setRotinas] = useState(ROTINAS);
+  const [rotinasHorarios, setRotinasHorarios] = useState(ROTINAS_HORARIOS);
+  const [rotinaEmEdicao, setRotinaEmEdicao] = useState(null); // null | "nova" | bloco de rotina
+  const [editandoHorarios, setEditandoHorarios] = useState(false);
   const [turnoInicio, setTurnoInicio] = useState(null);
   const [regulamento, setRegulamento] = useState("");
   const [regulamentoTemp, setRegulamentoTemp] = useState("");
@@ -1381,6 +1588,10 @@ export default function App() {
       const pdfConvSalvo = await obterPDF("convencao").catch(() => null);
       const rotConcluidasSalvas = await store.get("rotinas_concluidas", { data: "", ids: [] });
       const turnoInicioSalvo = await store.get("turno_inicio", { data: "", ts: null });
+      const rotinasSalvas = await store.get("rotinas_editadas", null);
+      const horariosSalvos = await store.get("rotinas_horarios_editados", null);
+      if (Array.isArray(rotinasSalvas)) setRotinas(rotinasSalvas);
+      if (Array.isArray(horariosSalvos)) setRotinasHorarios(horariosSalvos);
       const hoje = hojeISO();
 
       // Se ninguém fez upload manual ainda, a aba Regras começa preenchida com o RI que já vem
@@ -1984,7 +2195,7 @@ export default function App() {
         contextoRegras,
         trechoConvencao: trechoRelevanteConvencao,
         temConvencao: Boolean(convencao || temConvencaoEstruturada),
-        procedimentosPosto: TEXTO_PROCEDIMENTOS,
+        procedimentosPosto: montarTextoProcedimentos(rotinasHorarios, rotinas),
       });
 
       const messages = novo.map((m) => ({ role: m.role, content: m.content }));
@@ -2327,9 +2538,40 @@ export default function App() {
     await store.set("rotinas_concluidas", { data: hojeISO(), ids: lista });
   };
 
+  const salvarRotina = async (sec) => {
+    const existe = rotinas.some((r) => r.id === sec.id);
+    const lista = existe ? rotinas.map((r) => (r.id === sec.id ? sec : r)) : [...rotinas, sec];
+    setRotinas(lista);
+    setRotinaEmEdicao(null);
+    setRotinaAberta(sec.id);
+    if (!(await store.set("rotinas_editadas", lista))) alert("Não consegui salvar a rotina no aparelho (armazenamento cheio?).");
+  };
+
+  const excluirRotina = async (id) => {
+    const lista = rotinas.filter((r) => r.id !== id);
+    setRotinas(lista);
+    setRotinaEmEdicao(null);
+    await store.set("rotinas_editadas", lista);
+    if (rotinasConcluidas.includes(id)) await alternarRotinaConcluida(id);
+  };
+
+  const salvarHorarios = async (lista) => {
+    setRotinasHorarios(lista);
+    setEditandoHorarios(false);
+    if (!(await store.set("rotinas_horarios_editados", lista))) alert("Não consegui salvar os horários no aparelho (armazenamento cheio?).");
+  };
+
+  const restaurarRotinasPadrao = async () => {
+    if (!window.confirm("Voltar todas as rotinas e horários para o padrão original? Suas edições serão perdidas.")) return;
+    setRotinas(ROTINAS);
+    setRotinasHorarios(ROTINAS_HORARIOS);
+    await store.set("rotinas_editadas", null);
+    await store.set("rotinas_horarios_editados", null);
+  };
+
   const cor = tokensTema(tema);
-  const rotinasFeitas = rotinasConcluidas.length;
-  const rotinasTotal = ROTINAS.length;
+  const rotinasFeitas = rotinas.filter((r) => rotinasConcluidas.includes(r.id)).length;
+  const rotinasTotal = rotinas.length;
   const progressoRotinas = rotinasTotal ? Math.round((rotinasFeitas / rotinasTotal) * 100) : 0;
 
   const NAV_ITENS = [
@@ -2953,11 +3195,17 @@ export default function App() {
 
             {/* Horários-chave — sempre visível */}
             <div style={{ borderRadius: 22, padding: 14, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
-              <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario, fontWeight: 700, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                <Icone nome="relogio" tamanho={13} cor={cor.textoSecundario} /> Horários-chave
-              </p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                  <Icone nome="relogio" tamanho={13} cor={cor.textoSecundario} /> Horários-chave
+                </p>
+                <button type="button" onClick={() => setEditandoHorarios(true)} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: cor.verdeNumero }}>
+                  <Icone nome="lapis" tamanho={13} /> Editar
+                </button>
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {ROTINAS_HORARIOS.map((h, i) => (
+                {rotinasHorarios.length === 0 && <p style={{ fontSize: 13, color: cor.textoSecundario }}>Nenhum horário cadastrado.</p>}
+                {rotinasHorarios.map((h, i) => (
                   <div key={i} style={{ display: "flex", gap: 10, fontSize: 13, lineHeight: 1.4 }}>
                     <span style={{ color: cor.verdeNumero, fontWeight: 700, flexShrink: 0, width: 64 }}>{h.hora}</span>
                     <span style={{ color: cor.textoSecundario }}>{h.texto}</span>
@@ -2967,14 +3215,15 @@ export default function App() {
             </div>
 
             {/* AGORA */}
-            {ROTINAS.filter((sec) => !rotinasConcluidas.includes(sec.id)).length > 0 && (
+            {rotinas.filter((sec) => !rotinasConcluidas.includes(sec.id)).length > 0 && (
               <div>
                 <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario, fontWeight: 700, marginBottom: 8 }}>Agora</p>
                 <div className="flex flex-col md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3" style={{ gap: 8 }}>
-                  {ROTINAS.filter((sec) => !rotinasConcluidas.includes(sec.id)).map((sec) => (
+                  {rotinas.filter((sec) => !rotinasConcluidas.includes(sec.id)).map((sec) => (
                     <RotinaCard key={sec.id} sec={sec} cor={cor} aberto={rotinaAberta === sec.id} concluida={false}
                       onToggleAberto={() => setRotinaAberta(rotinaAberta === sec.id ? null : sec.id)}
-                      onToggleConcluida={() => alternarRotinaConcluida(sec.id)} />
+                      onToggleConcluida={() => alternarRotinaConcluida(sec.id)}
+                      onEditar={() => setRotinaEmEdicao(sec)} />
                   ))}
                 </div>
               </div>
@@ -2985,14 +3234,26 @@ export default function App() {
               <div>
                 <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em", color: cor.textoSecundario, fontWeight: 700, marginBottom: 8 }}>Concluídas</p>
                 <div className="flex flex-col md:grid md:grid-cols-2 md:gap-3 lg:grid-cols-3" style={{ gap: 8 }}>
-                  {ROTINAS.filter((sec) => rotinasConcluidas.includes(sec.id)).map((sec) => (
+                  {rotinas.filter((sec) => rotinasConcluidas.includes(sec.id)).map((sec) => (
                     <RotinaCard key={sec.id} sec={sec} cor={cor} aberto={rotinaAberta === sec.id} concluida={true}
                       onToggleAberto={() => setRotinaAberta(rotinaAberta === sec.id ? null : sec.id)}
-                      onToggleConcluida={() => alternarRotinaConcluida(sec.id)} />
+                      onToggleConcluida={() => alternarRotinaConcluida(sec.id)}
+                      onEditar={() => setRotinaEmEdicao(sec)} />
                   ))}
                 </div>
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={() => setRotinaEmEdicao("nova")}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 0", borderRadius: 18, fontSize: 13, fontWeight: 600, color: cor.verdeNumero, border: `1px dashed ${cor.cartaoBorda}` }}
+            >
+              <Icone nome="mais" tamanho={15} /> Nova rotina
+            </button>
+            <button type="button" onClick={restaurarRotinasPadrao} style={{ alignSelf: "center", fontSize: 11, color: cor.textoSecundario, textDecoration: "underline" }}>
+              Restaurar rotinas padrão
+            </button>
 
             <p style={{ fontSize: 10, color: cor.textoSecundario, textAlign: "center", marginTop: 6, lineHeight: 1.5 }}>
               Irregularidade? Foto + iButton → grupo Vigia (WhatsApp).
@@ -3048,6 +3309,21 @@ export default function App() {
             <Icone nome="x" tamanho={16} />
           </button>
         </div>
+      )}
+
+      {/* Edição das rotinas e dos horários-chave (aba Rotinas) */}
+      {rotinaEmEdicao && (
+        <EditorRotina
+          cor={cor}
+          tema={tema}
+          sec={rotinaEmEdicao === "nova" ? null : rotinaEmEdicao}
+          onSalvar={salvarRotina}
+          onExcluir={excluirRotina}
+          onFechar={() => setRotinaEmEdicao(null)}
+        />
+      )}
+      {editandoHorarios && (
+        <EditorHorarios cor={cor} tema={tema} horarios={rotinasHorarios} onSalvar={salvarHorarios} onFechar={() => setEditandoHorarios(false)} />
       )}
 
       {/* Detalhe de uma ocorrência do histórico (foto ampliada + texto completo) */}
