@@ -1019,63 +1019,65 @@ function Icone({ nome, tamanho = 20, espessura = 2.75, cor = "currentColor", sty
   );
 }
 
-// ---------- Tokens de cor por tema (Solar Gold & Cyber Amber: Âmbar Obsidiana + Dourado Solar / Branco + Âmbar Real) ----------
+// ---------- Tokens de cor por tema (Dourado suave: grafite quente + dourado #D4AF5F / marfim + dourado velho #A67C2E) ----------
+// Os nomes (roxo, verde...) são históricos; vale o papel: "verde" = cor dos botões de destaque,
+// "verdeNumero" = texto/ícone na cor de destaque, "roxo" = destaque secundário.
 function tokensTema(tema) {
   if (tema === "light") {
     return {
-      fundoPagina: "radial-gradient(120% 80% at 80% 0%, #FFFBEB 0%, #FFFDFA 55%, #FEF3C7 100%)",
+      fundoPagina: "radial-gradient(120% 80% at 80% 0%, #FBF8F1 0%, #FFFFFF 55%, #F6F2E8 100%)",
       cartao: "rgba(255,255,255,.94)",
-      cartaoBorda: "rgba(217,119,6,.22)",
-      cartaoSombra: "0 10px 30px rgba(217,119,6,.09)",
-      subBlocoRoxo: "rgba(254,243,199,.85)",
-      subBlocoRoxoBorda: "rgba(217,119,6,.25)",
-      subBlocoVerde: "rgba(253,230,138,.85)",
-      subBlocoVerdeBorda: "rgba(180,83,9,.32)",
-      textoPrincipal: "#1E1B18",
-      textoSecundario: "#453E38",
-      textoNavInativo: "#78716C",
-      iconeInativo: "#78716C",
-      roxo: "#D97706",
-      roxoClaro: "#FFFBEB",
-      verde: "#F59E0B",
-      verdeNumero: "#B45309",
-      verdeTextoClaro: "#78350F",
+      cartaoBorda: "rgba(160,124,48,.22)",
+      cartaoSombra: "0 10px 30px rgba(120,90,30,.08)",
+      subBlocoRoxo: "rgba(246,238,219,.85)",
+      subBlocoRoxoBorda: "rgba(160,124,48,.25)",
+      subBlocoVerde: "rgba(239,226,195,.85)",
+      subBlocoVerdeBorda: "rgba(138,100,32,.30)",
+      textoPrincipal: "#231E14",
+      textoSecundario: "#4A4232",
+      textoNavInativo: "#7A705C",
+      iconeInativo: "#7A705C",
+      roxo: "#A67C2E",
+      roxoClaro: "#FBF8F1",
+      verde: "#A67C2E",
+      verdeNumero: "#8A6420",
+      verdeTextoClaro: "#5C4210",
       textoSobreVerde: "#FFFFFF",
       amareloBg: "rgba(244,63,94,.20)",
       amareloTexto: "#9F1239",
       navBg: "rgba(255,255,255,.94)",
-      navSombra: "0 4px 25px rgba(217,119,6,.08)",
+      navSombra: "0 4px 25px rgba(120,90,30,.08)",
       inputBg: "rgba(255,255,255,.98)",
-      inputBorda: "rgba(217,119,6,.32)",
-      placeholder: "#A8A29E",
+      inputBorda: "rgba(160,124,48,.30)",
+      placeholder: "#A39A88",
     };
   }
   return {
-    fundoPagina: "radial-gradient(120% 80% at 80% 0%, #151022 0%, #0D0B12 45%, #0A0810 100%)",
-    cartao: "rgba(21,16,34,.78)",
-    cartaoBorda: "rgba(245,158,11,.28)",
-    cartaoSombra: "0 12px 32px rgba(0,0,0,.65), 0 0 20px rgba(245,158,11,.15)",
-    subBlocoRoxo: "rgba(245,158,11,.16)",
-    subBlocoRoxoBorda: "rgba(251,191,36,.35)",
-    subBlocoVerde: "rgba(245,158,11,.22)",
-    subBlocoVerdeBorda: "rgba(251,191,36,.40)",
-    textoPrincipal: "#FFFBEB",
-    textoSecundario: "#F3F4F6",
-    textoNavInativo: "#9CA3AF",
-    iconeInativo: "#9CA3AF",
-    roxo: "#FBBF24",
-    roxoClaro: "rgba(251,191,36,.20)",
-    verde: "#F59E0B",
-    verdeNumero: "#FCD34D",
-    verdeTextoClaro: "#FEF3C7",
-    textoSobreVerde: "#451A03",
+    fundoPagina: "radial-gradient(120% 80% at 80% 0%, #1D1A12 0%, #0E0D0B 45%, #0B0A08 100%)",
+    cartao: "rgba(29,26,18,.78)",
+    cartaoBorda: "rgba(212,175,95,.26)",
+    cartaoSombra: "0 12px 32px rgba(0,0,0,.65), 0 0 18px rgba(212,175,95,.08)",
+    subBlocoRoxo: "rgba(212,175,95,.12)",
+    subBlocoRoxoBorda: "rgba(226,196,127,.30)",
+    subBlocoVerde: "rgba(212,175,95,.16)",
+    subBlocoVerdeBorda: "rgba(226,196,127,.34)",
+    textoPrincipal: "#F7F1E3",
+    textoSecundario: "#E6E0D2",
+    textoNavInativo: "#A8A08C",
+    iconeInativo: "#A8A08C",
+    roxo: "#E2C47F",
+    roxoClaro: "rgba(226,196,127,.18)",
+    verde: "#D4AF5F",
+    verdeNumero: "#E2C47F",
+    verdeTextoClaro: "#F3E6C4",
+    textoSobreVerde: "#1F1606",
     amareloBg: "rgba(244,63,94,.25)",
     amareloTexto: "#FECDD3",
-    navBg: "rgba(21,16,34,.90)",
+    navBg: "rgba(24,22,15,.92)",
     navSombra: "0 -4px 30px rgba(0,0,0,.70)",
-    inputBg: "rgba(21,16,34,.88)",
-    inputBorda: "rgba(245,158,11,.35)",
-    placeholder: "#6B7280",
+    inputBg: "rgba(24,22,15,.88)",
+    inputBorda: "rgba(212,175,95,.32)",
+    placeholder: "#756D5C",
   };
 }
 
@@ -1174,7 +1176,7 @@ function JanelaEdicao({ cor, tema, titulo, onFechar, children, rodape }) {
       <div
         style={{
           width: "100%", maxWidth: 520, maxHeight: "90vh", display: "flex", flexDirection: "column",
-          background: tema === "light" ? "#FFFDFA" : "#151022",
+          background: tema === "light" ? "#FFFFFF" : "#18160F",
           borderRadius: "26px 26px 0 0", boxShadow: "0 -10px 40px rgba(0,0,0,.4)",
         }}
       >
@@ -2868,7 +2870,7 @@ export default function App() {
         <aside className="hidden md:flex md:shrink-0 md:w-[275px] md:sticky md:top-0 md:h-screen md:p-5">
           <div style={{ background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, boxShadow: cor.cartaoSombra, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderRadius: 24, padding: "24px 18px", display: "flex", flexDirection: "column", gap: 20, width: "100%" }}>
             <div className="flex items-center gap-3">
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, #F59E0B 0%, #F43F5E 100%)", boxShadow: "0 0 16px rgba(245, 158, 11, 0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, #E2C47F 0%, #A67C2E 100%)", boxShadow: "0 0 16px rgba(212, 175, 95,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <span style={{ fontSize: 20 }}>🛡️</span>
               </div>
               <div>
@@ -2887,18 +2889,18 @@ export default function App() {
                     className={`transition-all duration-200 transform ${ativo ? "translate-x-1 shadow-lg" : "hover:translate-x-1.5 hover:bg-white/5 active:scale-95"}`}
                     style={{
                       display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 16, textAlign: "left",
-                      background: ativo ? "rgba(245, 158, 11, 0.20)" : "transparent",
-                      border: ativo ? "1px solid rgba(245, 158, 11, 0.50)" : "1px solid transparent",
-                      boxShadow: ativo ? "0 8px 25px -4px rgba(245, 158, 11, 0.30)" : "none",
+                      background: ativo ? "rgba(212, 175, 95,0.20)" : "transparent",
+                      border: ativo ? "1px solid rgba(212, 175, 95,0.50)" : "1px solid transparent",
+                      boxShadow: ativo ? "0 8px 25px -4px rgba(212, 175, 95,0.30)" : "none",
                       backdropFilter: ativo ? "blur(12px)" : "none",
                     }}
                   >
-                    <div style={{ width: 28, height: 28, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: ativo ? "rgba(245, 158, 11, 0.15)" : "transparent" }}>
+                    <div style={{ width: 28, height: 28, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: ativo ? "rgba(212, 175, 95,0.15)" : "transparent" }}>
                       <Icone nome={item.icone} tamanho={19} cor={ativo ? cor.verde : cor.iconeInativo} />
                     </div>
                     <span style={{ fontSize: 14, fontWeight: ativo ? 700 : 500, flex: 1, color: ativo ? cor.textoPrincipal : cor.textoSecundario }}>{item.label}</span>
                     {item.badge > 0 && (
-                      <span style={{ fontSize: 11, fontWeight: 700, background: cor.verde, color: cor.textoSobreVerde, borderRadius: 999, minWidth: 18, height: 18, padding: "0 6px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 10px rgba(245, 158, 11, 0.4)" }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, background: cor.verde, color: cor.textoSobreVerde, borderRadius: 999, minWidth: 18, height: 18, padding: "0 6px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 10px rgba(212, 175, 95,0.4)" }}>
                         {item.badge}
                       </span>
                     )}
@@ -2909,7 +2911,7 @@ export default function App() {
 
             <div style={{ marginTop: "auto", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, background: cor.subBlocoVerde, border: `1px solid ${cor.subBlocoVerdeBorda}` }}>
               <div className="flex items-center gap-2">
-                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={16} cor={tema === "dark" ? "#FBBF24" : "#D97706"} />
+                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={16} cor={tema === "dark" ? "#E2C47F" : "#A67C2E"} />
                 <span style={{ fontSize: 13, fontWeight: 600 }}>{tema === "dark" ? "Modo Escuro" : "Modo Claro"}</span>
               </div>
               <button 
@@ -2917,7 +2919,7 @@ export default function App() {
                 className="transition-transform duration-200 hover:scale-110 active:scale-95"
                 style={{ width: 32, height: 32, borderRadius: 999, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}
               >
-                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={16} cor={tema === "dark" ? "#FBBF24" : "#D97706"} />
+                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={16} cor={tema === "dark" ? "#E2C47F" : "#A67C2E"} />
               </button>
             </div>
           </div>
@@ -2928,7 +2930,7 @@ export default function App() {
             {/* Cabeçalho (só mobile) */}
             <header className="md:hidden flex items-center justify-between" style={{ padding: "16px 16px 8px" }}>
               <div className="flex items-center gap-3">
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #F59E0B 0%, #F43F5E 100%)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #E2C47F 0%, #A67C2E 100%)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <span style={{ fontSize: 18 }}>🛡️</span>
                 </div>
                 <div>
@@ -2941,7 +2943,7 @@ export default function App() {
                 className="transition-transform duration-200 hover:scale-105 active:scale-95"
                 style={{ width: 40, height: 40, borderRadius: 14, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center" }}
               >
-                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={18} cor={tema === "dark" ? "#FBBF24" : cor.roxo} />
+                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={18} cor={cor.roxo} />
               </button>
             </header>
 
@@ -2958,7 +2960,7 @@ export default function App() {
                 const ativo = aba === item.id;
                 return (
                   <button key={item.id} onClick={() => setAba(item.id)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, position: "relative", padding: "4px 0" }}>
-                    <div style={{ padding: "4px 12px", borderRadius: 14, background: ativo ? "rgba(245, 158, 11, 0.20)" : "transparent" }}>
+                    <div style={{ padding: "4px 12px", borderRadius: 14, background: ativo ? "rgba(212, 175, 95,0.20)" : "transparent" }}>
                       <Icone nome={item.icone} tamanho={19} cor={ativo ? cor.verde : cor.iconeInativo} />
                     </div>
                     <span style={{ fontSize: 10, fontWeight: ativo ? 700 : 500, color: ativo ? cor.textoPrincipal : cor.textoNavInativo }}>{item.label}</span>
@@ -3054,7 +3056,7 @@ export default function App() {
               )}
               {chat.length === 0 && (
                 <div style={{ textAlign: "center", padding: "24px 16px 0" }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 14, background: "linear-gradient(135deg, #F59E0B 0%, #F43F5E 100%)", boxShadow: "0 0 16px rgba(245, 158, 11, 0.4)", margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 14, background: "linear-gradient(135deg, #E2C47F 0%, #A67C2E 100%)", boxShadow: "0 0 16px rgba(212, 175, 95,0.4)", margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ fontSize: 20 }}>💬</span>
                   </div>
                   <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>Pergunte durante o turno</p>
@@ -3626,7 +3628,7 @@ export default function App() {
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%", maxWidth: 520, maxHeight: "85vh", overflowY: "auto",
-              background: tema === "light" ? "#FBFAFD" : "#1A0B2E",
+              background: tema === "light" ? "#FFFFFF" : "#18160F",
               borderRadius: "26px 26px 0 0", padding: "18px 18px 24px",
               boxShadow: "0 -10px 40px rgba(0,0,0,.4)",
             }}
