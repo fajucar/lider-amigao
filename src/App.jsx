@@ -313,7 +313,8 @@ async function callGemini(system, messages, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    const generationConfig = { maxOutputTokens: 450 };
+    // 800: uma frase falando vários andares da vistoria gera vários itens no JSON.
+    const generationConfig = { maxOutputTokens: 800 };
     // Nem toda chamada quer JSON (ex.: o relatório de turno gera um e-mail em texto livre) —
     // só força responseMimeType quando o chamador realmente espera JSON (padrão: true, é o
     // caso mais comum aqui, o chat e a referência de regulamento).
@@ -361,7 +362,7 @@ async function callGroq(system, messages, options = {}) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: GROQ_MODEL,
-        max_tokens: 450,
+        max_tokens: 800,
         reasoning_effort: "none",
         messages: [{ role: "system", content: system }, ...messages],
       }),
@@ -389,7 +390,7 @@ async function callCerebras(system, messages, options = {}) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: CEREBRAS_MODEL,
-        max_completion_tokens: 450,
+        max_completion_tokens: 800,
         temperature: 0.2,
         reasoning_effort: "none",
         messages: [{ role: "system", content: system }, ...messages],
@@ -781,6 +782,83 @@ function montarTextoProcedimentos(horarios, rotinas) {
   ].join("\n");
 }
 
+// ---------- Vistoria (checagem item a item por voz, ex.: portas corta-fogo andar por andar) ----------
+// vistoria = { id, titulo, inicio, itens: [{ id, local, item, status: "ok"|"defeito", observacao, ts }] }
+
+// Junta os itens novos aos já anotados. O mesmo local+item falado de novo SUBSTITUI o anterior
+// (ex.: "o 24º na verdade está ok"), em vez de aparecer duas vezes no relatório.
+function mesclarItensVistoria(itens, novos) {
+  const chave = (i) => normalizarTexto(`${i.local}|${i.item || ""}`).replace(/\s+/g, " ").trim();
+  const lista = [...itens];
+  novos.forEach((n) => {
+    const idx = lista.findIndex((i) => chave(i) === chave(n));
+    if (idx >= 0) lista[idx] = { ...lista[idx], ...n, id: lista[idx].id };
+    else lista.push(n);
+  });
+  return lista;
+}
+
+// Normaliza o que a IA devolveu (campos faltando, status em outro formato etc.).
+function itensVistoriaDaIA(brutos) {
+  if (!Array.isArray(brutos)) return [];
+  return brutos
+    .filter((i) => i && typeof i.local === "string" && i.local.trim())
+    .map((i, n) => {
+      const st = normalizarTexto(String(i.status || ""));
+      const defeito = /defeit|ruim|problem|quebr|nao|irregular|avari/.test(st);
+      return {
+        id: `${Date.now()}_${n}`,
+        local: i.local.trim(),
+        item: typeof i.item === "string" ? i.item.trim() : "",
+        status: defeito ? "defeito" : "ok",
+        observacao: typeof i.observacao === "string" ? i.observacao.trim() : "",
+        ts: new Date().toISOString(),
+      };
+    });
+}
+
+function contarVistoria(vistoria) {
+  const itens = vistoria?.itens || [];
+  const defeito = itens.filter((i) => i.status === "defeito");
+  return { total: itens.length, ok: itens.length - defeito.length, defeito: defeito.length };
+}
+
+// Resumo que vai no prompt, pra IA saber o que já foi anotado e em que torre/andar ele está.
+function resumoVistoriaParaIA(vistoria) {
+  if (!vistoria) return null;
+  const linhas = vistoria.itens.slice(-25).map((i) => `- ${i.local}${i.item ? ` (${i.item})` : ""}: ${i.status}${i.observacao ? `, ${i.observacao}` : ""}`);
+  return `Título: ${vistoria.titulo}\nItens já anotados (${vistoria.itens.length}):\n${linhas.join("\n") || "(nenhum ainda)"}`;
+}
+
+// Relatório montado no próprio app (não pela IA): assim nenhum item some nem é inventado.
+function montarRelatorioVistoria(vistoria, nomeLider) {
+  const { total, ok, defeito } = contarVistoria(vistoria);
+  const inicio = new Date(vistoria.inicio);
+  const linhaItem = (i) => `• ${i.local}${i.item ? ` (${i.item})` : ""}${i.observacao ? `: ${i.observacao}` : ""}`;
+  const partes = [
+    `📋 RELATÓRIO DE VISTORIA: ${vistoria.titulo}`,
+    `📅 ${inicio.toLocaleDateString("pt-BR")} · ${fmtHora(inicio)} às ${fmtHora(Date.now())}`,
+    ...(nomeLider ? [`👤 Responsável: ${nomeLider}`] : []),
+    "",
+    `Total verificado: ${total} · ✅ ${ok} em ordem · ⚠️ ${defeito} com defeito`,
+  ];
+  const comDefeito = vistoria.itens.filter((i) => i.status === "defeito");
+  const emOrdem = vistoria.itens.filter((i) => i.status !== "defeito");
+  if (comDefeito.length) partes.push("", "⚠️ COM DEFEITO", ...comDefeito.map(linhaItem));
+  if (emOrdem.length) partes.push("", "✅ EM ORDEM", ...emOrdem.map(linhaItem));
+  return partes.join("\n");
+}
+
+// Resumo curto pra ser falado em viva-voz.
+function resumoVozVistoria(vistoria) {
+  const { total, ok, defeito } = contarVistoria(vistoria);
+  if (!total) return "Ainda não anotei nenhum item nessa vistoria.";
+  if (!defeito) return `Vistoria com ${total} ${total === 1 ? "item" : "itens"}, todos em ordem.`;
+  const locais = vistoria.itens.filter((i) => i.status === "defeito").map((i) => i.local);
+  const lista = locais.length > 5 ? `${locais.slice(0, 5).join(", ")} e mais ${locais.length - 5}` : locais.join(", ");
+  return `Vistoria com ${total} ${total === 1 ? "item" : "itens"}: ${ok} em ordem e ${defeito} com defeito, em ${lista}. O relatório completo está na tela.`;
+}
+
 function hojeISO() {
   const d = new Date();
   return d.toISOString().slice(0, 10);
@@ -1001,7 +1079,7 @@ function tokensTema(tema) {
   };
 }
 
-function RotinaCard({ sec, cor, aberto, concluida, onToggleAberto, onToggleConcluida, onEditar }) {
+function RotinaCard({ sec, cor, aberto, concluida, onToggleAberto, onToggleConcluida, onEditar, onIniciarVistoria }) {
   return (
     <div style={{ borderRadius: 22, overflow: "hidden", background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
@@ -1061,15 +1139,26 @@ function RotinaCard({ sec, cor, aberto, concluida, onToggleAberto, onToggleConcl
               )}
             </div>
           ))}
-          {onEditar && (
-            <button
-              type="button"
-              onClick={onEditar}
-              style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, marginTop: 2, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, color: cor.verdeNumero, border: `1px solid ${cor.cartaoBorda}` }}
-            >
-              <Icone nome="lapis" tamanho={13} /> Editar
-            </button>
-          )}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 2 }}>
+            {onIniciarVistoria && (
+              <button
+                type="button"
+                onClick={onIniciarVistoria}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: cor.verde, color: cor.textoSobreVerde }}
+              >
+                <Icone nome="mic" tamanho={13} /> Iniciar vistoria
+              </button>
+            )}
+            {onEditar && (
+              <button
+                type="button"
+                onClick={onEditar}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, color: cor.verdeNumero, border: `1px solid ${cor.cartaoBorda}` }}
+              >
+                <Icone nome="lapis" tamanho={13} /> Editar
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -1263,6 +1352,105 @@ function EditorHorarios({ cor, tema, horarios, onSalvar, onFechar }) {
   );
 }
 
+// Painel da vistoria em andamento (topo da aba Consultar): contagem, lista de itens (toque
+// no status pra trocar OK/defeito, lixeira pra remover) e botões de relatório/encerrar.
+function PainelVistoria({ cor, vistoria, onAlternarStatus, onRemoverItem, onRelatorio, onEncerrar }) {
+  const [aberto, setAberto] = useState(false);
+  const { total, ok, defeito } = contarVistoria(vistoria);
+  const botao = { padding: "7px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700 };
+  return (
+    <div style={{ borderRadius: 20, padding: 12, background: cor.subBlocoVerde, border: `1px solid ${cor.subBlocoVerdeBorda}` }}>
+      <button type="button" onClick={() => setAberto(!aberto)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, textAlign: "left" }}>
+        <span className="animate-pulse" style={{ height: 8, width: 8, borderRadius: 999, background: "#F87171", flexShrink: 0 }} />
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: cor.textoSecundario, fontWeight: 700 }}>Vistoria em andamento</span>
+          <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: cor.textoPrincipal, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{vistoria.titulo}</span>
+        </span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: cor.textoPrincipal, whiteSpace: "nowrap" }}>✅ {ok} · ⚠️ {defeito}</span>
+        <Icone nome="setaBaixo" tamanho={14} cor={cor.textoSecundario} style={{ transform: aberto ? "rotate(180deg)" : "none", transition: "transform .2s" }} />
+      </button>
+
+      {aberto && (
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6, maxHeight: 260, overflowY: "auto" }}>
+          {total === 0 && (
+            <p style={{ fontSize: 12.5, color: cor.textoSecundario, lineHeight: 1.5 }}>
+              Segure o microfone e fale o estado de cada item. Ex.: "Torre 1, 25º andar, porta ok. 24º andar, porta com a mola quebrada."
+            </p>
+          )}
+          {vistoria.itens.map((i) => (
+            <div key={i.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+              <button
+                type="button"
+                onClick={() => onAlternarStatus(i.id)}
+                title="Trocar entre OK e defeito"
+                style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 999, background: i.status === "defeito" ? "rgba(248,113,113,.2)" : "rgba(16,185,129,.2)", color: i.status === "defeito" ? "#FCA5A5" : "#6EE7B7" }}
+              >
+                {i.status === "defeito" ? "DEFEITO" : "OK"}
+              </button>
+              <span style={{ flex: 1, minWidth: 0, color: cor.textoPrincipal, lineHeight: 1.35 }}>
+                {i.local}
+                {i.observacao && <span style={{ color: cor.textoSecundario }}> · {i.observacao}</span>}
+              </span>
+              <button type="button" onClick={() => onRemoverItem(i.id)} aria-label="Remover item" style={{ color: cor.textoSecundario, display: "flex", padding: 2 }}>
+                <Icone nome="lixeira" tamanho={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
+        <button type="button" onClick={onRelatorio} style={{ ...botao, flex: 1, background: cor.verde, color: cor.textoSobreVerde }}>Ver relatório</button>
+        <button type="button" onClick={onEncerrar} style={{ ...botao, border: `1px solid ${cor.subBlocoVerdeBorda}`, color: cor.textoPrincipal }}>Encerrar</button>
+      </div>
+    </div>
+  );
+}
+
+// Relatório da vistoria: texto pronto + copiar, WhatsApp, salvar nas ocorrências, descartar.
+function JanelaRelatorioVistoria({ cor, tema, texto, onFechar, onSalvarOcorrencia, onDescartar }) {
+  const [copiado, setCopiado] = useState(false);
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(texto);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {}
+  };
+  const botao = { padding: "11px 0", borderRadius: 999, fontSize: 13, fontWeight: 700, flex: 1 };
+  return (
+    <JanelaEdicao
+      cor={cor}
+      tema={tema}
+      titulo="Relatório da vistoria"
+      onFechar={onFechar}
+      rodape={
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button type="button" onClick={copiar} style={{ ...botao, border: `1px solid ${cor.cartaoBorda}`, color: cor.textoPrincipal }}>{copiado ? "Copiado ✓" : "Copiar"}</button>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(texto)}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ ...botao, textAlign: "center", background: "#25D366", color: "#062E16" }}
+            >
+              WhatsApp
+            </a>
+          </div>
+          <button type="button" onClick={onSalvarOcorrencia} style={{ ...botao, background: cor.verde, color: cor.textoSobreVerde }}>
+            Salvar nas ocorrências e encerrar
+          </button>
+          <button type="button" onClick={onDescartar} style={{ fontSize: 11, color: cor.textoSecundario, textDecoration: "underline" }}>
+            Descartar vistoria
+          </button>
+        </div>
+      }
+    >
+      <p style={{ fontSize: 14, lineHeight: 1.55, whiteSpace: "pre-wrap", color: cor.textoPrincipal }}>{texto}</p>
+    </JanelaEdicao>
+  );
+}
+
 // Formulário de registro de ocorrência (botões de local + descrição + foto + registrar).
 // Fica num componente à parte (nível de módulo, não dentro de App) porque é usado em dois
 // lugares: no topo da tela inicial (Turno) e na aba Ocorrências — declarar de novo dentro de
@@ -1392,6 +1580,10 @@ export default function App() {
   const [rotinasHorarios, setRotinasHorarios] = useState(ROTINAS_HORARIOS);
   const [rotinaEmEdicao, setRotinaEmEdicao] = useState(null); // null | "nova" | bloco de rotina
   const [editandoHorarios, setEditandoHorarios] = useState(false);
+  // Vistoria em andamento (checagem item a item por voz). Salva no aparelho pra não perder se
+  // o app fechar no meio da ronda.
+  const [vistoria, setVistoria] = useState(null);
+  const [mostrarRelatorioVistoria, setMostrarRelatorioVistoria] = useState(false);
   const [turnoInicio, setTurnoInicio] = useState(null);
   const [regulamento, setRegulamento] = useState("");
   const [regulamentoTemp, setRegulamentoTemp] = useState("");
@@ -1592,6 +1784,8 @@ export default function App() {
       const horariosSalvos = await store.get("rotinas_horarios_editados", null);
       if (Array.isArray(rotinasSalvas)) setRotinas(rotinasSalvas);
       if (Array.isArray(horariosSalvos)) setRotinasHorarios(horariosSalvos);
+      const vistoriaSalva = await store.get("vistoria_atual", null);
+      if (vistoriaSalva && Array.isArray(vistoriaSalva.itens)) setVistoria(vistoriaSalva);
       const hoje = hojeISO();
 
       // Se ninguém fez upload manual ainda, a aba Regras começa preenchida com o RI que já vem
@@ -2196,6 +2390,7 @@ export default function App() {
         trechoConvencao: trechoRelevanteConvencao,
         temConvencao: Boolean(convencao || temConvencaoEstruturada),
         procedimentosPosto: montarTextoProcedimentos(rotinasHorarios, rotinas),
+        vistoriaAtual: resumoVistoriaParaIA(vistoria),
       });
 
       const messages = novo.map((m) => ({ role: m.role, content: m.content }));
@@ -2211,6 +2406,7 @@ export default function App() {
       let respostaVoz = "";
       let textoMensagemChat = "";
       let ocDetectada = null;
+      let vistoriaIA = null;
 
       try {
         const semPensamento = respostaRaw.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
@@ -2221,6 +2417,7 @@ export default function App() {
         respostaVoz = typeof parsed.respostaVoz === "string" ? parsed.respostaVoz.trim() : "";
         if (!respostaVoz) throw new Error("Resposta vazia");
         textoMensagemChat = respostaVoz;
+        if (parsed.vistoria && typeof parsed.vistoria === "object") vistoriaIA = parsed.vistoria;
         if (parsed.ocorrencia && parsed.ocorrencia.detectada) {
           // Suporta tanto o formato novo (titulo/local/descricao/providencia) quanto o antigo (texto)
           const oc = parsed.ocorrencia;
@@ -2231,6 +2428,35 @@ export default function App() {
       } catch (eJson) {
         console.warn("Resposta da IA fora do formato esperado:", eJson);
         textoMensagemChat = "Não consegui entender a resposta. Tente de novo.";
+      }
+
+      // Vistoria: anota os itens falados, abre a vistoria sozinha se ainda não existir, e
+      // responde relatório/encerrar com o texto montado pelo app (não pela IA).
+      if (vistoriaIA) {
+        const acao = String(vistoriaIA.acao || "nenhuma").toLowerCase();
+        const novosItens = itensVistoriaDaIA(vistoriaIA.itens);
+        let v = vistoria;
+        if (acao === "iniciar" && !v?.itens.length) v = novaVistoria(vistoriaIA.titulo);
+        if (novosItens.length) {
+          if (!v) v = novaVistoria(vistoriaIA.titulo || novosItens[0].item || "Vistoria");
+          v = { ...v, itens: mesclarItensVistoria(v.itens, novosItens) };
+          // Defeito anotado na vistoria vai pro relatório, não vira ocorrência solta.
+          ocDetectada = null;
+        }
+        if (v !== vistoria) await gravarVistoria(v);
+
+        if (acao === "relatorio" && v) {
+          respostaVoz = resumoVozVistoria(v);
+          textoMensagemChat = montarRelatorioVistoria(v, nomeLider.trim());
+          setMostrarRelatorioVistoria(true);
+        } else if (acao === "encerrar" && v) {
+          respostaVoz = `${resumoVozVistoria(v)} Salvei o relatório nas ocorrências.`;
+          textoMensagemChat = montarRelatorioVistoria(v, nomeLider.trim());
+          await salvarVistoriaComoOcorrencia(v);
+        } else if (novosItens.length) {
+          const { ok, defeito } = contarVistoria(v);
+          textoMensagemChat = `${textoMensagemChat}\n\n📋 Vistoria: ✅ ${ok} em ordem · ⚠️ ${defeito} com defeito`;
+        }
       }
 
       if (ocDetectada) {
@@ -2569,6 +2795,48 @@ export default function App() {
     await store.set("rotinas_horarios_editados", null);
   };
 
+  const gravarVistoria = async (v) => {
+    setVistoria(v);
+    await store.set("vistoria_atual", v);
+  };
+
+  const novaVistoria = (titulo) => ({ id: Date.now(), titulo: titulo || "Vistoria", inicio: new Date().toISOString(), itens: [] });
+
+  const iniciarVistoria = async (titulo) => {
+    if (vistoria?.itens.length && !window.confirm(`Já existe a vistoria "${vistoria.titulo}" com ${vistoria.itens.length} itens. Começar outra e descartar essa?`)) return;
+    await gravarVistoria(novaVistoria(titulo));
+    setAba("consultar");
+  };
+
+  const alternarStatusItemVistoria = (id) =>
+    gravarVistoria({ ...vistoria, itens: vistoria.itens.map((i) => (i.id === id ? { ...i, status: i.status === "defeito" ? "ok" : "defeito" } : i)) });
+
+  const removerItemVistoria = (id) => gravarVistoria({ ...vistoria, itens: vistoria.itens.filter((i) => i.id !== id) });
+
+  // Salva o relatório como uma ocorrência (categoria Manutenção) e encerra a vistoria.
+  const salvarVistoriaComoOcorrencia = async (v = vistoria) => {
+    if (!v) return;
+    if (v.itens.length) {
+      await adicionarOcorrencia(montarRelatorioVistoria(v, nomeLider.trim()), "manutencao", { artigo: "Não encontrado", resumo: "" }, "", true);
+    }
+    setMostrarRelatorioVistoria(false);
+    await gravarVistoria(null);
+  };
+
+  const encerrarVistoria = async () => {
+    if (!vistoria.itens.length) {
+      await gravarVistoria(null);
+      return;
+    }
+    if (window.confirm("Encerrar a vistoria e salvar o relatório nas ocorrências?")) await salvarVistoriaComoOcorrencia();
+  };
+
+  const descartarVistoria = async () => {
+    if (!window.confirm("Descartar a vistoria? Os itens anotados serão perdidos.")) return;
+    setMostrarRelatorioVistoria(false);
+    await gravarVistoria(null);
+  };
+
   const cor = tokensTema(tema);
   const rotinasFeitas = rotinas.filter((r) => rotinasConcluidas.includes(r.id)).length;
   const rotinasTotal = rotinas.length;
@@ -2774,6 +3042,16 @@ export default function App() {
         {aba === "consultar" && (
           <div className="flex flex-col h-full">
             <div className="px-4 md:px-0 py-3 md:py-2 pb-8 md:max-w-2xl md:mx-auto" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {vistoria && (
+                <PainelVistoria
+                  cor={cor}
+                  vistoria={vistoria}
+                  onAlternarStatus={alternarStatusItemVistoria}
+                  onRemoverItem={removerItemVistoria}
+                  onRelatorio={() => setMostrarRelatorioVistoria(true)}
+                  onEncerrar={encerrarVistoria}
+                />
+              )}
               {chat.length === 0 && (
                 <div style={{ textAlign: "center", padding: "24px 16px 0" }}>
                   <div style={{ width: 44, height: 44, borderRadius: 14, background: "linear-gradient(135deg, #F59E0B 0%, #F43F5E 100%)", boxShadow: "0 0 16px rgba(245, 158, 11, 0.4)", margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -3223,7 +3501,8 @@ export default function App() {
                     <RotinaCard key={sec.id} sec={sec} cor={cor} aberto={rotinaAberta === sec.id} concluida={false}
                       onToggleAberto={() => setRotinaAberta(rotinaAberta === sec.id ? null : sec.id)}
                       onToggleConcluida={() => alternarRotinaConcluida(sec.id)}
-                      onEditar={() => setRotinaEmEdicao(sec)} />
+                      onEditar={() => setRotinaEmEdicao(sec)}
+                      onIniciarVistoria={() => iniciarVistoria([sec.titulo, sec.grupos[0]?.sub].filter(Boolean).join(" - "))} />
                   ))}
                 </div>
               </div>
@@ -3320,6 +3599,16 @@ export default function App() {
           onSalvar={salvarRotina}
           onExcluir={excluirRotina}
           onFechar={() => setRotinaEmEdicao(null)}
+        />
+      )}
+      {mostrarRelatorioVistoria && vistoria && (
+        <JanelaRelatorioVistoria
+          cor={cor}
+          tema={tema}
+          texto={montarRelatorioVistoria(vistoria, nomeLider.trim())}
+          onFechar={() => setMostrarRelatorioVistoria(false)}
+          onSalvarOcorrencia={() => salvarVistoriaComoOcorrencia()}
+          onDescartar={descartarVistoria}
         />
       )}
       {editandoHorarios && (
