@@ -761,6 +761,23 @@ const ROTINAS = [
   },
 ];
 
+// Texto corrido das rotinas acima, enviado à IA no chat (antes ela só recebia o RI/Convenção
+// e respondia "não encontrei" pra pergunta de rotina, horário, senha etc.).
+const TEXTO_PROCEDIMENTOS = [
+  "Horários-chave:",
+  ...ROTINAS_HORARIOS.map((h) => `- ${h.hora}: ${h.texto}`),
+  ...ROTINAS.map((sec) =>
+    [
+      `\n${sec.titulo}:`,
+      ...sec.grupos.flatMap((g) => [
+        ...(g.destaque ? [`- ${g.destaque}`] : []),
+        ...(g.sub ? [`  ${g.sub}:`] : []),
+        ...g.itens.map((it) => `- ${it}`),
+      ]),
+    ].join("\n")
+  ),
+].join("\n");
+
 function hojeISO() {
   const d = new Date();
   return d.toISOString().slice(0, 10);
@@ -798,6 +815,24 @@ function agruparOcorrenciasPorData(ocorrencias) {
           : new Date(data + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
       itens: porData.get(data),
     }));
+}
+
+// ---------- Reconhecimento de voz: junta os trechos transcritos sem repetir ----------
+// O Chrome do Android manda cada resultado já com tudo o que foi dito antes ("presente",
+// "presente para", "presente para ele"); o desktop manda só o trecho novo. Aqui: se o trecho
+// novo começa com o que já temos, ele substitui; se já está contido, ignora; senão, soma.
+function juntarTranscricoes(partes) {
+  let acumulado = "";
+  partes.forEach((parte) => {
+    const trecho = (parte || "").trim();
+    if (!trecho) return;
+    const a = normalizarTexto(acumulado).replace(/\s+/g, " ");
+    const n = normalizarTexto(trecho).replace(/\s+/g, " ");
+    if (!a || n.startsWith(a)) acumulado = trecho;
+    else if (a.endsWith(n) || (n.length > 12 && a.includes(n))) return;
+    else acumulado = `${acumulado} ${trecho}`;
+  });
+  return acumulado;
 }
 
 // ---------- Text-to-Speech: seleção de voz pt-BR + correções fonéticas ----------
@@ -1197,11 +1232,24 @@ export default function App() {
   const [vozDisponivel, setVozDisponivel] = useState(false);
   const [erroVoz, setErroVoz] = useState("");
   const recognitionRef = useRef(null);
-  // Acumula o texto transcrito em tempo real via ref (não depende de ciclo de estado)
-  // para que pararGravacao leia o valor correto mesmo logo após recognition.stop().
-  const textoTranscritoRef = useRef("");
-  // Controla se o botão ainda está pressionado dentro do onend do recognition
+  // Texto já transcrito em reinícios anteriores do reconhecimento (textoBase) e o da sessão
+  // atual (textoSessao). Ficam em ref pra o onend/timeout lerem o valor atual, não o do render.
+  const textoBaseRef = useRef("");
+  const textoSessaoRef = useRef("");
+  // true enquanto o microfone está aberto (setado no onstart)
   const gravandoRef = useRef(false);
+  // true enquanto o dedo está no botão (ou durante a escuta automática do viva-voz)
+  const botaoPressionadoRef = useRef(false);
+  // Soltou o botão: esperando o navegador entregar o resultado final pra enviar
+  const envioPendenteRef = useRef(false);
+  const envioFeitoRef = useRef(false);
+  const envioTimerRef = useRef(null);
+  const silencioTimerRef = useRef(null);
+  const modoAutoRef = useRef(false);
+  const permissaoMicOkRef = useRef(false);
+  // Sempre aponta pra versão mais nova de enviarPergunta (os callbacks do reconhecimento
+  // são criados no início da gravação e, sem isso, mandariam o histórico do chat antigo).
+  const enviarPerguntaRef = useRef(() => {});
   // Instância ativa do recognition (criada a cada gravação)
   const activeRecognitionRef = useRef(null);
 
@@ -1411,7 +1459,7 @@ export default function App() {
         setFalando(false);
         setStatusVoz("");
         if (modoVivaVozRef.current) {
-          setTimeout(() => iniciarGravacao(), 600);
+          setTimeout(() => iniciarGravacao({ automatico: true }), 600);
         }
       };
 
@@ -1436,7 +1484,7 @@ export default function App() {
         utterance.onend = () => {
           setFalando(false);
           setStatusVoz("");
-          if (modoVivaVozRef.current) setTimeout(() => iniciarGravacao(), 600);
+          if (modoVivaVozRef.current) setTimeout(() => iniciarGravacao({ automatico: true }), 600);
         };
         utterance.onerror = () => { setFalando(false); setStatusVoz(""); };
         window.speechSynthesis.speak(utterance);
@@ -1477,7 +1525,8 @@ export default function App() {
     setVozDisponivel(true);
   }, []);
 
-  const iniciarGravacao = async () => {
+  // automatico: escuta do modo viva-voz (sem botão pressionado) — envia sozinho após silêncio.
+  const iniciarGravacao = async ({ automatico = false } = {}) => {
     if (!window.isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
       const port = window.location.port ? `:${window.location.port}` : "";
       const localHttpsUrl = `https://${window.location.hostname}${port}/`;
@@ -1488,7 +1537,9 @@ export default function App() {
       if (!erroVoz) setErroVoz("Reconhecimento de voz indisponível neste navegador. Recomendamos usar o Google Chrome ou Edge.");
       return;
     }
-    if (gravandoRef.current || pensandoRef.current) return;
+    if (gravandoRef.current || pensandoRef.current || envioPendenteRef.current) return;
+    modoAutoRef.current = automatico;
+    if (automatico) botaoPressionadoRef.current = true;
 
     // Para áudio da Amigona se estiver falando
     if (audioAtualRef.current) { audioAtualRef.current.pause(); audioAtualRef.current = null; }
@@ -1496,20 +1547,28 @@ export default function App() {
     setFalando(false);
     setErroVoz("");
     setPergunta("");
-    textoTranscritoRef.current = "";
+    textoBaseRef.current = "";
+    textoSessaoRef.current = "";
+    envioFeitoRef.current = false;
 
-    // Pede permissão só na primeira vez (depois o browser já tem a permissão em cache)
-    try {
-      if (navigator.mediaDevices?.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((t) => t.stop());
+    // Pede permissão só na primeira vez. Chamar getUserMedia a cada toque atrasa a abertura
+    // do microfone e, no Chrome do Android, às vezes "rouba" o áudio do reconhecimento.
+    if (!permissaoMicOkRef.current) {
+      try {
+        if (navigator.mediaDevices?.getUserMedia) {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach((t) => t.stop());
+        }
+        permissaoMicOkRef.current = true;
+      } catch (err) {
+        botaoPressionadoRef.current = false;
+        setErroVoz("Permissão do microfone negada. Toque no cadeado 🔒 na barra de endereço e escolha 'Permitir'.");
+        return;
       }
-    } catch (err) {
-      setErroVoz("Permissão do microfone negada. Toque no cadeado 🔒 na barra de endereço e escolha 'Permitir'.");
-      return;
+      // Soltou o botão enquanto o navegador pedia permissão: não abre o microfone.
+      if (!botaoPressionadoRef.current) return;
     }
 
-    // Cria uma instância NOVA a cada gravação — evita estado sujo de sessões anteriores
     const SpeechRecognition = recognitionRef.current;
     const rec = new SpeechRecognition();
     rec.lang = "pt-BR";
@@ -1526,71 +1585,106 @@ export default function App() {
 
     rec.onresult = (event) => {
       setErroVoz("");
-      // Reconstrói o texto completo a partir de TODOS os resultados finais
-      // mais o interim atual — evita duplicação independente do comportamento do browser
-      let textoFinal = "";
-      let textoInterim = "";
-      for (let i = 0; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          textoFinal += event.results[i][0].transcript + " ";
-        } else {
-          textoInterim += event.results[i][0].transcript;
-        }
+      // O Chrome do Android devolve cada resultado JÁ ACUMULADO ("presente", "presente para",
+      // "presente para ele"...), enquanto o desktop devolve só o trecho novo. juntarTranscricoes
+      // trata os dois casos, em vez de só concatenar (que gerava o texto repetido).
+      const partes = [];
+      for (let i = 0; i < event.results.length; i++) partes.push(event.results[i][0].transcript);
+      textoSessaoRef.current = juntarTranscricoes(partes);
+      setPergunta(juntarTranscricoes([textoBaseRef.current, textoSessaoRef.current]));
+
+      // Viva-voz (sem botão): envia sozinho depois de ~1,5s de silêncio.
+      if (modoAutoRef.current) {
+        clearTimeout(silencioTimerRef.current);
+        silencioTimerRef.current = setTimeout(() => pararGravacao(), 1500);
       }
-      const textoCompleto = (textoFinal + textoInterim).trim();
-      textoTranscritoRef.current = textoFinal.trim(); // só os finais vão ser enviados
-      setPergunta(textoCompleto);
     };
 
     rec.onend = () => {
-      // Se o botão ainda está pressionado, reinicia para manter o microfone aberto
-      if (gravandoRef.current) {
-        try { rec.start(); } catch (e) {}
-      } else {
-        setGravando(false);
+      // Cada reinício zera event.results, então guarda o que já foi falado antes de reiniciar.
+      textoBaseRef.current = juntarTranscricoes([textoBaseRef.current, textoSessaoRef.current]);
+      textoSessaoRef.current = "";
+      if (botaoPressionadoRef.current && activeRecognitionRef.current === rec) {
+        // Botão ainda pressionado: o navegador fechou o microfone por pausa na fala, reabre.
+        try { rec.start(); return; } catch (e) {}
       }
+      gravandoRef.current = false;
+      setGravando(false);
+      if (activeRecognitionRef.current === rec) activeRecognitionRef.current = null;
+      if (envioPendenteRef.current) finalizarEnvioVoz();
     };
 
     rec.onerror = (event) => {
-      if (event.error === "aborted") return; // abortamos nós mesmos ao soltar o botão
-      gravandoRef.current = false;
-      setGravando(false);
-      setStatusVoz("");
+      // "no-speech" (silêncio) e "aborted" não são falhas: o onend decide se reabre ou envia.
+      if (event.error === "aborted" || event.error === "no-speech") return;
+      botaoPressionadoRef.current = false;
       const mensagens = {
         "not-allowed": "Permissão do microfone negada. Toque no cadeado 🔒 e escolha 'Permitir'.",
         "service-not-allowed": "Permissão de microfone bloqueada pelo navegador.",
-        "no-speech": "",
         "audio-capture": "Nenhum microfone encontrado.",
         "network": "Erro de rede no reconhecimento de voz.",
       };
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") permissaoMicOkRef.current = false;
       const msg = mensagens[event.error];
       if (msg) setErroVoz(msg);
     };
 
-    // Guarda a instância ativa para pararGravacao poder chamar stop()
     activeRecognitionRef.current = rec;
     try {
       rec.start();
     } catch (e) {
       console.error("Erro ao iniciar recognition:", e);
+      activeRecognitionRef.current = null;
+      botaoPressionadoRef.current = false;
+    }
+  };
+
+  // Envia o que foi falado. Roda uma única vez por gravação: no onend do reconhecimento (quando
+  // o navegador já entregou o resultado final) ou pelo timeout de segurança de pararGravacao.
+  const finalizarEnvioVoz = () => {
+    if (envioFeitoRef.current) return;
+    envioFeitoRef.current = true;
+    envioPendenteRef.current = false;
+    clearTimeout(envioTimerRef.current);
+    const texto = juntarTranscricoes([textoBaseRef.current, textoSessaoRef.current]).trim();
+    textoBaseRef.current = "";
+    textoSessaoRef.current = "";
+    setPergunta("");
+    if (texto) {
+      setStatusVoz("Enviando...");
+      enviarPerguntaRef.current(texto);
+    } else {
+      setStatusVoz("");
+      if (!modoAutoRef.current) setErroVoz("Não ouvi nada. Segure o botão, fale e só solte depois de terminar.");
     }
   };
 
   const pararGravacao = () => {
-    gravandoRef.current = false;
-    setGravando(false);
-    if (activeRecognitionRef.current) {
-      try { activeRecognitionRef.current.stop(); } catch (e) {}
-      activeRecognitionRef.current = null;
+    clearTimeout(silencioTimerRef.current);
+    const estavaPressionado = botaoPressionadoRef.current;
+    botaoPressionadoRef.current = false;
+    const rec = activeRecognitionRef.current;
+    if (!rec) {
+      // Soltou antes do microfone abrir (ex.: toque rápido): nada pra enviar.
+      if (estavaPressionado) setStatusVoz("");
+      return;
     }
-    // Pega o texto dos resultados FINAIS acumulados
-    const finalTexto = textoTranscritoRef.current.trim();
-    textoTranscritoRef.current = "";
-    setPergunta("");
-    if (finalTexto) {
-      setStatusVoz("Enviando...");
-      enviarPergunta(finalTexto);
-    }
+    if (envioPendenteRef.current) return;
+    // NÃO lê o texto aqui: no Android o resultado final só chega DEPOIS do stop(). Marca o envio
+    // como pendente e deixa o onend enviar; o timeout cobre navegadores que não disparam onend.
+    envioPendenteRef.current = true;
+    setStatusVoz("Processando sua fala...");
+    try { rec.stop(); } catch (e) {}
+    clearTimeout(envioTimerRef.current);
+    envioTimerRef.current = setTimeout(() => {
+      if (activeRecognitionRef.current === rec) {
+        try { rec.abort(); } catch (e) {}
+        activeRecognitionRef.current = null;
+      }
+      gravandoRef.current = false;
+      setGravando(false);
+      finalizarEnvioVoz();
+    }, 2000);
   };
 
   const fileToBase64 = (file) =>
@@ -1866,7 +1960,15 @@ export default function App() {
       // os artigos mais relevantes pra esta mensagem, em src/data/regras.json (RI + Convenção já
       // extraídos dos PDFs e estruturados por capítulo/artigo), e mandamos só isso pra IA — com a
       // citação exata (fonte, capítulo, artigo) já pronta, pra IA não ter que adivinhar.
-      const { contexto: contextoRegras } = montarContextoRegras(q, regrasCondominio, { limite: 8 });
+      let { contexto: contextoRegras } = montarContextoRegras(q, regrasCondominio, { limite: 8 });
+      // Pergunta de continuação ("e no domingo?", "e visitante pode?") não tem o assunto na
+      // própria frase: busca de novo junto com a pergunta anterior do usuário.
+      const perguntaAnterior = [...chat].reverse().find((m) => m.role === "user")?.content;
+      if (perguntaAnterior && q.split(/\s+/).length <= 8) {
+        const combinado = montarContextoRegras(`${perguntaAnterior} ${q}`, regrasCondominio, { limite: 8 });
+        // A busca garante ao menos um artigo por assunto, então os da pergunta atual continuam.
+        if (combinado.contexto) contextoRegras = combinado.contexto;
+      }
       // Convenção ainda não estruturada (PDF escaneado, sem texto selecionável) cai aqui: se o
       // operador tiver colado/enviado manualmente o texto na aba Regras, ainda buscamos nele.
       const temConvencaoEstruturada = regrasCondominio.some((r) => r.fonte === "Convenção");
@@ -1882,6 +1984,7 @@ export default function App() {
         contextoRegras,
         trechoConvencao: trechoRelevanteConvencao,
         temConvencao: Boolean(convencao || temConvencaoEstruturada),
+        procedimentosPosto: TEXTO_PROCEDIMENTOS,
       });
 
       const messages = novo.map((m) => ({ role: m.role, content: m.content }));
@@ -1974,7 +2077,7 @@ export default function App() {
       if (audioAtivoRef.current && respostaVoz) {
         falarTexto(respostaVoz);
       } else if (modoVivaVozRef.current) {
-        setTimeout(() => iniciarGravacao(), 500);
+        setTimeout(() => iniciarGravacao({ automatico: true }), 500);
       }
     } catch (e) {
       // Log técnico completo no console (F12) pro responsável pelo app diagnosticar; a
@@ -2016,6 +2119,8 @@ export default function App() {
       setPensando(false);
     }
   };
+
+  enviarPerguntaRef.current = enviarPergunta;
 
   const registrarDoChat = async (texto) => {
     await adicionarOcorrencia(texto, "outros");
@@ -2839,7 +2944,7 @@ export default function App() {
 
             {/* Concluir por voz */}
             <button
-              onClick={() => { if (!gravando) iniciarGravacao(); }}
+              onClick={() => { if (!gravando) iniciarGravacao({ automatico: true }); }}
               style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", borderRadius: 999, padding: "13px 0", background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", color: cor.textoPrincipal, fontSize: 14, fontWeight: 600 }}
             >
               <Icone nome="mic" tamanho={18} cor={cor.verdeNumero} />
@@ -3029,11 +3134,15 @@ export default function App() {
               // Para o áudio da Amigona se estiver falando antes de começar a ouvir
               if (audioAtualRef.current) { audioAtualRef.current.pause(); audioAtualRef.current = null; setFalando(false); }
               if (window.speechSynthesis) window.speechSynthesis.cancel();
+              botaoPressionadoRef.current = true;
               iniciarGravacao();
             }}
-            onPointerUp={() => { if (gravando) pararGravacao(); }}
-            onPointerLeave={() => { if (gravando) pararGravacao(); }}
-            onPointerCancel={() => { if (gravando) pararGravacao(); }}
+            // Usa a ref (não o estado "gravando"): se soltar antes do microfone terminar de
+            // abrir, o estado ainda é false e a gravação ficaria presa aberta.
+            onPointerUp={() => { if (botaoPressionadoRef.current) pararGravacao(); }}
+            onPointerLeave={() => { if (botaoPressionadoRef.current) pararGravacao(); }}
+            onPointerCancel={() => { if (botaoPressionadoRef.current) pararGravacao(); }}
+            onContextMenu={(e) => e.preventDefault()}
             title={gravando ? "Solta para enviar" : falando ? "Assistente falando" : "Segure para falar"}
             style={{
               flexShrink: 0,
