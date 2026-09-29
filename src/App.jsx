@@ -1723,6 +1723,27 @@ export default function App() {
     return () => window.removeEventListener("lider-amigao-groq-call", atualizar);
   }, []);
 
+  // PWA Prompt de Instalação
+  const [promptInstalacao, setPromptInstalacao] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setPromptInstalacao(e);
+    };
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+  }, []);
+
+  const instalarApp = async () => {
+    if (!promptInstalacao) return;
+    promptInstalacao.prompt();
+    const { outcome } = await promptInstalacao.userChoice;
+    if (outcome === "accepted") {
+      setPromptInstalacao(null);
+    }
+  };
+
   // Ocorrência
   const [novaOc, setNovaOc] = useState("");
   const [novaCat, setNovaCat] = useState("acesso");
@@ -2974,13 +2995,38 @@ export default function App() {
                   <p style={{ fontSize: 11, color: cor.textoSecundario, margin: "1px 0 0" }}>Guarita Inteligente · Chamadas IA: {chamadasGroq}</p>
                 </div>
               </div>
-              <button
-                onClick={alternarTema}
-                className="transition-transform duration-200 hover:scale-105 active:scale-95"
-                style={{ width: 40, height: 40, borderRadius: 14, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center" }}
-              >
-                <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={18} cor={cor.roxo} />
-              </button>
+              <div className="flex items-center gap-2">
+                {promptInstalacao && (
+                  <button
+                    onClick={instalarApp}
+                    className="transition-transform duration-200 hover:scale-105 active:scale-95"
+                    style={{
+                      height: 38,
+                      padding: "0 12px",
+                      borderRadius: 12,
+                      background: "linear-gradient(135deg, #E2C47F 0%, #A67C2E 100%)",
+                      color: "#18140C",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      border: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      boxShadow: "0 2px 8px rgba(226,196,127,0.3)",
+                    }}
+                  >
+                    <span>📲</span>
+                    <span>Instalar</span>
+                  </button>
+                )}
+                <button
+                  onClick={alternarTema}
+                  className="transition-transform duration-200 hover:scale-105 active:scale-95"
+                  style={{ width: 40, height: 40, borderRadius: 14, background: cor.cartao, border: `1px solid ${cor.cartaoBorda}`, backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <Icone nome={tema === "dark" ? "lua" : "sol"} tamanho={18} cor={cor.roxo} />
+                </button>
+              </div>
             </header>
 
             {/* Navegação flutuante inferior (mobile dock) */}

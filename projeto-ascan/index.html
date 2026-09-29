@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASCAN | Associação Cultural Alfredo do Nascimento - Música que Transforma Vidas</title>
+  <meta name="description" content="Aulas gratuitas de violão e teclado desde 1989 em São Paulo. Projeto social e cultural transformando vidas através da música no Colégio Esmeralda. Apoie com doações ou instrumentos!">
+  <meta name="keywords" content="ASCAN, música que transforma vidas, aulas de violão gratuitas, aulas de teclado, projeto social música são paulo, tremembé, colégio esmeralda, doação instrumentos">
+  
+  <!-- Open Graph / Redes Sociais -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="ASCAN | Música que Transforma Vidas">
+  <meta property="og:description" content="Aulas gratuitas de violão e teclado para crianças e jovens na Zona Norte de São Paulo. Venha aprender ou apoie nossa causa!">
+  <meta property="og:image" content="./assets/img/hero.jpg">
+  
+  <!-- Favicon / Ícone -->
+  <link rel="icon" href="./assets/img/logo.jpg" type="image/jpeg">
+
+  <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6.5.1 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              navy: '#0B2240',
+              deep: '#06172E',
+              blue: '#1D64D8',
+              sky: '#38BDF8',
+              gold: '#F59E0B',
+              amber: '#D97706',
+              light: '#F8FAFC',
+              card: '#FFFFFF'
+            }
+          },
+          fontFamily: {
+            heading: ['Outfit', 'sans-serif'],
+            body: ['"Plus Jakarta Sans"', 'sans-serif']
+          },
+          boxShadow: {
+            'soft': '0 10px 30px -10px rgba(11, 34, 64, 0.08)',
+            'hover': '0 20px 40px -15px rgba(29, 100, 216, 0.2)',
+            'gold': '0 10px 25px -5px rgba(245, 158, 11, 0.35)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #1e293b;
+      background-color: #f8fafc;
+      overflow-x: hidden;
+    }
+    h1, h2, h3, h4, .font-heading {
+      font-family: 'Outfit', sans-serif;
+    }
+    .hero-gradient {
+      background: linear-gradient(135deg, #06172E 0%, #0B2240 50%, #174276 100%);
+    }
+    .badge-blur {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+    }
+    .musical-note {
+      position: absolute;
+      opacity: 0.15;
+      pointer-events: none;
+      user-select: none;
+      animation: float 6s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-15px) rotate(6deg); }
+    }
+    .pulse-glow {
+      animation: pulseGlow 2s infinite;
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+      70% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+    /* Smooth custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-brand-gold selection:text-brand-deep">
+
+  <!-- ========================================================================= -->
+  <!-- BARRA SUPERIOR DE ANÚNCIOS & CONTATO RÁPIDO                                -->
+  <!-- ========================================================================= -->
+  <div class="bg-brand-deep text-slate-300 text-xs sm:text-sm py-2 px-4 border-b border-white/10 relative z-50">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+      <div class="flex items-center gap-2 justify-center">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          <i class="fa-solid fa-bell text-[10px] mr-1"></i> Inscrições Abertas
+        </span>
+        <span>Aulas gratuitas aos domingos das 09h às 11h no Colégio Esmeralda</span>
+      </div>
+      <div class="flex items-center gap-4 text-xs">
+        <a href="https://wa.me/5511951019978" target="_blank" class="hover:text-amber-400 transition-colors flex items-center gap-1 font-medium">
+          <i class="fa-brands fa-whatsapp text-emerald-400"></i> (11) 95101-9978
+        </a>
+        <span class="text-slate-600 hidden sm:inline">|</span>
+        <a href="#apoie" class="text-amber-300 hover:text-amber-200 font-semibold flex items-center gap-1 transition-colors">
+          <i class="fa-solid fa-heart text-rose-400"></i> Faça sua Doação PIX
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- HEADER / NAVEGAÇÃO PRINCIPAL (STICKY + GLASSMORPHISM)                      -->
+  <!-- ========================================================================= -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm transition-all duration-300" id="mainHeader">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- LOGO -->
+      <a href="#" class="flex items-center gap-3 group">
+        <div class="h-12 bg-white rounded-lg p-1 shadow-sm border border-slate-200/80 flex items-center justify-center overflow-hidden">
+          <img src="./assets/img/logo.jpg" alt="ASCAN Logo" class="h-full w-auto object-contain transition-transform duration-300 group-hover:scale-105" onerror="this.onerror=null; this.src='https://via.placeholder.com/150x50?text=ASCAN';">
+        </div>
+        <div class="flex flex-col">
+          <span class="font-heading text-xl font-black text-brand-navy tracking-tight group-hover:text-brand-blue transition-colors">ASCAN</span>
+          <span class="text-[11px] font-medium text-slate-500 uppercase tracking-wider -mt-1 hidden xs:block">Música que Transforma Vidas</span>
+        </div>
+      </a>
+
+      <!-- MENU DESKTOP -->
+      <nav class="hidden lg:flex items-center gap-7">
+        <a href="#inicio" class="text-sm font-semibold text-slate-700 hover:text-brand-blue transition-colors">Início</a>
+        <a href="#historia" class="text-sm font-semibold text-slate-700 hover:text-brand-blue transition-colors">História</a>
+        <a href="#aulas" class="text-sm font-semibold text-slate-700 hover:text-brand-blue transition-colors">Aulas</a>
+        <a href="#galeria" class="text-sm font-semibold text-slate-700 hover:text-brand-blue transition-colors">Galeria</a>
+        <a href="#video" class="text-sm font-semibold text-slate-700 hover:text-brand-blue transition-colors">Podcast</a>
+        <a href="#voluntario" class="text-sm font-semibold text-slate-700 hover:text-brand-blue transition-colors">Voluntários</a>
+        <a href="#contato" class="text-sm font-semibold text-slate-700 hover:text-brand-blue transition-colors">Contato</a>
+      </nav>
+
+      <!-- BOTÕES DE AÇÃO (DESKTOP) -->
+      <div class="hidden sm:flex items-center gap-3">
+        <a href="https://wa.me/5511951019978?text=Ol%C3%A1%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20as%20aulas%20da%20ASCAN" target="_blank" 
+           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-brand-navy transition-all">
+          <i class="fa-brands fa-whatsapp text-emerald-500 text-sm"></i> WhatsApp
+        </a>
+        <a href="#apoie" 
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold text-brand-deep bg-amber-400 hover:bg-amber-300 shadow-gold hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+          <i class="fa-solid fa-heart text-rose-600"></i> Apoiar Projeto
+        </a>
+      </div>
+
+      <!-- BOTÃO MOBILE HAMBURGER -->
+      <button type="button" id="mobileMenuBtn" aria-label="Abrir menu" class="lg:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 focus:outline-none">
+        <i class="fa-solid fa-bars text-xl" id="menuIcon"></i>
+      </button>
+
+    </div>
+
+    <!-- DRAWER MOBILE -->
+    <div id="mobileMenu" class="hidden lg:hidden bg-white border-b border-slate-200 px-6 py-5 shadow-xl transition-all">
+      <div class="flex flex-col gap-4">
+        <a href="#inicio" class="mobile-nav-link text-base font-semibold text-slate-800 hover:text-brand-blue py-1">Início</a>
+        <a href="#historia" class="mobile-nav-link text-base font-semibold text-slate-800 hover:text-brand-blue py-1">História da ASCAN</a>
+        <a href="#aulas" class="mobile-nav-link text-base font-semibold text-slate-800 hover:text-brand-blue py-1">Nossas Aulas (Violão & Teclado)</a>
+        <a href="#galeria" class="mobile-nav-link text-base font-semibold text-slate-800 hover:text-brand-blue py-1">Galeria de Fotos</a>
+        <a href="#video" class="mobile-nav-link text-base font-semibold text-slate-800 hover:text-brand-blue py-1">Podcast & Entrevista</a>
+        <a href="#voluntario" class="mobile-nav-link text-base font-semibold text-slate-800 hover:text-brand-blue py-1">Seja um Voluntário</a>
+        <a href="#contato" class="mobile-nav-link text-base font-semibold text-slate-800 hover:text-brand-blue py-1">Onde Estamos & Contato</a>
+        
+        <div class="pt-4 border-t border-slate-100 flex flex-col gap-3">
+          <a href="#apoie" class="w-full text-center py-3 rounded-xl font-bold text-brand-deep bg-amber-400 hover:bg-amber-300 shadow-md flex items-center justify-center gap-2">
+            <i class="fa-solid fa-heart text-rose-600"></i> Fazer Doação PIX
+          </a>
+          <a href="https://wa.me/5511951019978" target="_blank" class="w-full text-center py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 flex items-center justify-center gap-2">
+            <i class="fa-brands fa-whatsapp text-emerald-500"></i> Falar no WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- HERO SECTION IMPACTANTE                                                   -->
+  <!-- ========================================================================= -->
+  <section id="inicio" class="relative hero-gradient text-white pt-12 pb-20 md:py-24 overflow-hidden">
+    <!-- Efeitos Visuais & Notas Musicais Animadas -->
+    <div class="absolute -top-24 -left-24 w-96 h-96 bg-brand-blue/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
+    <i class="fa-solid fa-music text-6xl text-white/5 musical-note top-16 left-12" style="animation-delay: 0s;"></i>
+    <i class="fa-solid fa-guitar text-7xl text-white/5 musical-note bottom-16 left-1/3" style="animation-delay: 2s;"></i>
+    <i class="fa-solid fa-compact-disc text-6xl text-white/5 musical-note top-32 right-1/4" style="animation-delay: 4s;"></i>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- TEXTO HERO -->
+        <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+          
+          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full badge-blur text-amber-300 text-xs sm:text-sm font-semibold tracking-wide shadow-sm">
+            <span class="flex h-2 w-2 rounded-full bg-amber-400 animate-ping"></span>
+            <i class="fa-solid fa-music"></i> Projeto Cultural & Social • Desde 1989
+          </div>
+
+          <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black font-heading leading-tight text-white tracking-tight">
+            Música que <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-200">transforma vidas</span> e constrói futuros.
+          </h1>
+
+          <p class="text-lg sm:text-xl text-slate-300 leading-relaxed max-w-2xl mx-auto lg:mx-0 font-normal">
+            Há mais de 35 anos proporcionando ensino gratuito de <strong>violão</strong> e <strong>teclado</strong> para crianças, jovens e famílias na Zona Norte de São Paulo. Conheça a ASCAN e faça parte dessa harmonia!
+          </p>
+
+          <!-- CTAs -->
+          <div class="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+            <a href="#aulas" class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full font-heading font-bold text-base text-brand-deep bg-amber-400 hover:bg-amber-300 shadow-gold transition-all duration-300 transform hover:-translate-y-1">
+              <i class="fa-solid fa-guitar text-lg"></i> Conheça Nossas Aulas
+            </a>
+            <a href="#apoie" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-heading font-bold text-base text-white badge-blur hover:bg-white/20 transition-all duration-300 border border-white/25">
+              <i class="fa-solid fa-hand-holding-heart text-rose-400"></i> Apoie o Projeto (PIX)
+            </a>
+          </div>
+
+          <!-- PÍLULAS DE DESTAQUE -->
+          <div class="pt-4 flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-semibold text-slate-300">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i> 100% Gratuito
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i> Instrumentos no Local
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i> A partir de 9 anos
+            </div>
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-400"></i> Colégio Esmeralda (Tremembé)
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FOTO OFICIAL DO HERO COM CARDS FLUTUANTES -->
+        <div class="lg:col-span-5">
+          <div class="relative max-w-md mx-auto">
+            
+            <!-- Moldura & Imagem Principal -->
+            <div class="relative z-10 rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20 aspect-[4/5] sm:aspect-square lg:aspect-[4/5] bg-slate-800 group">
+              <img src="./assets/img/hero.jpg" alt="Aulas da ASCAN em São Paulo" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80';">
+              <div class="absolute inset-0 bg-gradient-to-t from-brand-deep/80 via-transparent to-transparent"></div>
+              <div class="absolute bottom-4 left-4 right-4 text-white text-xs">
+                <span class="font-bold text-amber-300">Aulas no Colégio Esmeralda</span> • Prática, acolhimento e aprendizado musical
+              </div>
+            </div>
+
+            <!-- Card Flutuante 1: Tradição -->
+            <div class="absolute -top-6 -left-6 z-20 badge-blur bg-brand-deep/90 rounded-2xl p-3.5 shadow-xl border border-white/25 hidden sm:flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center font-bold text-lg">
+                <i class="fa-solid fa-award"></i>
+              </div>
+              <div>
+                <p class="text-[11px] uppercase tracking-wider text-slate-300 font-medium">Tradição & Amor</p>
+                <p class="text-sm font-bold text-white">Mais de 35 Anos</p>
+              </div>
+            </div>
+
+            <!-- Card Flutuante 2: Vagas Abertas -->
+            <div class="absolute -bottom-6 -right-6 z-20 badge-blur bg-white/95 rounded-2xl p-4 shadow-2xl border border-slate-200 hidden sm:flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                <i class="fa-solid fa-calendar-check"></i>
+              </div>
+              <div class="text-left">
+                <p class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">Todo Domingo</p>
+                <p class="text-sm font-bold text-brand-navy">09h00 às 11h00</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- NÚMEROS DE IMPACTO SOCIAL (STATS BAR)                                     -->
+  <!-- ========================================================================= -->
+  <section class="relative z-20 -mt-8 max-w-6xl mx-auto px-4 sm:px-6">
+    <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-soft grid grid-cols-2 md:grid-cols-4 gap-6 text-center border border-slate-200">
+      
+      <div class="space-y-1 border-r border-slate-100 last:border-none">
+        <p class="text-3xl sm:text-4xl font-extrabold font-heading text-brand-blue">+35</p>
+        <p class="text-xs sm:text-sm font-bold text-slate-700">Anos de Atuação</p>
+        <p class="text-[11px] text-slate-500 hidden sm:block">Transformando a comunidade</p>
+      </div>
+
+      <div class="space-y-1 border-r border-slate-100 last:border-none">
+        <p class="text-3xl sm:text-4xl font-extrabold font-heading text-amber-500">+1.200</p>
+        <p class="text-xs sm:text-sm font-bold text-slate-700">Vidas Transformadas</p>
+        <p class="text-[11px] text-slate-500 hidden sm:block">Alunos, jovens e famílias</p>
+      </div>
+
+      <div class="space-y-1 border-r border-slate-100 last:border-none">
+        <p class="text-3xl sm:text-4xl font-extrabold font-heading text-brand-blue">2 Cursos</p>
+        <p class="text-xs sm:text-sm font-bold text-slate-700">Violão e Teclado</p>
+        <p class="text-[11px] text-slate-500 hidden sm:block">Teoria, prática e harmonia</p>
+      </div>
+
+      <div class="space-y-1">
+        <p class="text-3xl sm:text-4xl font-extrabold font-heading text-emerald-600">100%</p>
+        <p class="text-xs sm:text-sm font-bold text-slate-700">Gratuito e Sem Fins</p>
+        <p class="text-[11px] text-slate-500 hidden sm:block">Mantido por doações</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- HISTÓRIA & PROPÓSITO                                                      -->
+  <!-- ========================================================================= -->
+  <section id="historia" class="py-20 bg-slate-50 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="inline-block text-xs font-black tracking-widest text-brand-blue uppercase bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+          Nossa Trajetória
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-black font-heading text-brand-navy mt-3">
+          Uma história que começou em 1989 e continua mudando destinos
+        </h2>
+        <p class="text-slate-600 mt-4 text-base sm:text-lg">
+          O encontro de dois apaixonados pela música virou um movimento de inclusão, arte e afeto na Zona Norte de São Paulo.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+        
+        <!-- TIMELINE / STORY CARDS -->
+        <div class="lg:col-span-7 space-y-6">
+          
+          <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80 relative hover:border-brand-blue/40 transition-colors">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 rounded-xl bg-blue-100 text-brand-blue flex items-center justify-center text-xl shrink-0 font-bold">
+                <i class="fa-solid fa-church"></i>
+              </div>
+              <div class="space-y-2">
+                <span class="text-xs font-bold text-amber-600 uppercase tracking-wider">1989 • A Origem</span>
+                <h3 class="text-xl font-bold text-brand-navy">O Encontro de Alfredo e Luiz Fernando</h3>
+                <p class="text-slate-600 leading-relaxed text-sm sm:text-base">
+                  A história da ASCAN começou a partir do encontro de Alfredo e Luiz Fernando na <strong>Igreja Nossa Senhora de Fátima</strong>, em São Paulo. Movidos pelo forte desejo de transformar vidas por meio da arte musical, eles começaram oferecendo aulas de violão dentro de suas próprias casas.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80 relative hover:border-brand-blue/40 transition-colors">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl shrink-0 font-bold">
+                <i class="fa-solid fa-school"></i>
+              </div>
+              <div class="space-y-2">
+                <span class="text-xs font-bold text-amber-600 uppercase tracking-wider">Crescimento Comunitário</span>
+                <h3 class="text-xl font-bold text-brand-navy">A Parceria com o Colégio Esmeralda</h3>
+                <p class="text-slate-600 leading-relaxed text-sm sm:text-base">
+                  Com o aumento contínuo de alunos, as salas de casa ficaram pequenas. Foi então que surgiu o acolhimento do <strong>Colégio Esmeralda</strong>, com o generoso apoio de sua diretora, <strong>Dona Sônia</strong>. Ao longo das décadas, a Escola de Violão tornou-se um santuário de aprendizado, disciplina, expressão e convivência.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80 relative hover:border-brand-blue/40 transition-colors">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl shrink-0 font-bold">
+                <i class="fa-solid fa-hands-holding-child"></i>
+              </div>
+              <div class="space-y-2">
+                <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Hoje e Sempre</span>
+                <h3 class="text-xl font-bold text-brand-navy">Associação Cultural Alfredo do Nascimento</h3>
+                <p class="text-slate-600 leading-relaxed text-sm sm:text-base">
+                  Consolidada como associação cultural sem fins lucrativos, a ASCAN segue firme em seu propósito de democratizar o acesso aos instrumentos musicais, estimulando a autoestima, o foco e os sonhos de quem mais precisa.
+                </p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- PILARES DE VALORES -->
+        <div class="lg:col-span-5 bg-brand-navy text-white rounded-3xl p-8 sm:p-10 shadow-xl space-y-8 relative overflow-hidden">
+          <div class="absolute -bottom-16 -right-16 w-60 h-60 bg-brand-blue/30 rounded-full blur-2xl"></div>
+          
+          <div class="relative z-10">
+            <span class="text-amber-400 font-bold text-xs uppercase tracking-widest">Nossos Pilares</span>
+            <h3 class="text-2xl sm:text-3xl font-black font-heading mt-2">Mais que notas musicais: formação humana.</h3>
+          </div>
+
+          <div class="space-y-6 relative z-10 text-sm">
+            
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center shrink-0 mt-1">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-base text-white">Inclusão Social Real</h4>
+                <p class="text-slate-300 mt-1">Qualquer pessoa a partir de 9 anos pode ingressar, independentemente de ter ou não instrumento.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center shrink-0 mt-1">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-base text-white">Desenvolvimento Cognitivo & Emocional</h4>
+                <p class="text-slate-300 mt-1">A música desenvolve raciocínio lógico, foco escolar, sensibilidade artística e alívio da ansiedade.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center shrink-0 mt-1">
+                <i class="fa-solid fa-check"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-base text-white">Convivência Saudável e Familiar</h4>
+                <p class="text-slate-300 mt-1">Domingos que reúnem pais, alunos e professores voluntários num ambiente seguro e comunitário.</p>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="pt-2 relative z-10">
+            <a href="#aulas" class="inline-flex items-center gap-2 text-amber-400 font-bold text-sm hover:text-amber-300 transition-colors">
+              Veja como funcionam as turmas <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- NOSSAS AULAS (VIOLÃO & TECLADO)                                           -->
+  <!-- ========================================================================= -->
+  <section id="aulas" class="py-20 bg-white relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="inline-block text-xs font-black tracking-widest text-amber-600 uppercase bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+          Educação Musical
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-black font-heading text-brand-navy mt-3">
+          Cursos Práticos de Violão e Teclado
+        </h2>
+        <p class="text-slate-600 mt-4 text-base sm:text-lg">
+          Metodologia desenvolvida para acolher quem nunca tocou uma nota e também quem quer evoluir na música.
+        </p>
+      </div>
+
+      <!-- GRID DE CURSOS -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+        
+        <!-- CARD VIOLÃO -->
+        <div class="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-soft hover:shadow-hover transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110"></div>
+          
+          <div>
+            <div class="flex items-center justify-between mb-6">
+              <div class="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-3xl shadow-sm">
+                <i class="fa-solid fa-guitar"></i>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                Mais Procurado
+              </span>
+            </div>
+
+            <h3 class="text-2xl sm:text-3xl font-black font-heading text-brand-navy mb-3">
+              Aulas de Violão
+            </h3>
+
+            <p class="text-slate-600 leading-relaxed text-sm sm:text-base mb-6">
+              O violão é um dos instrumentos mais versáteis do mundo. Nosso método combina afinação de ouvido, postura das mãos, troca de acordes, ritmos populares e leitura de cifras de maneira leve e prazerosa.
+            </p>
+
+            <!-- TÓPICOS -->
+            <ul class="space-y-3 text-sm text-slate-700 mb-8">
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>Postura correta e digitação dos dedos</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>Ritmos fundamentais (batidas, dedilhados e levadas)</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>Prática em conjunto e repertório variado</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>Disponibilizamos violões para quem não tem em casa</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-xs text-slate-500">
+              <p class="font-bold text-slate-700">📅 Domingos • 9h às 11h</p>
+              <p>👧👦 A partir de 9 anos</p>
+            </div>
+            <a href="https://wa.me/5511951019978?text=Ol%C3%A1!%20Tenho%20interesse%20em%20iniciar%20as%20aulas%20de%20VIOL%C3%83O%20na%20ASCAN" target="_blank" 
+               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-xs text-brand-deep bg-amber-400 hover:bg-amber-300 shadow-md transition-all">
+              <i class="fa-brands fa-whatsapp"></i> Inscrição de Violão
+            </a>
+          </div>
+
+        </div>
+
+        <!-- CARD TECLADO -->
+        <div class="rounded-3xl border border-slate-200 bg-white p-8 sm:p-10 shadow-soft hover:shadow-hover transition-all duration-300 flex flex-col justify-between group relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-brand-blue/10 rounded-bl-full pointer-events-none transition-transform group-hover:scale-110"></div>
+
+          <div>
+            <div class="flex items-center justify-between mb-6">
+              <div class="w-16 h-16 rounded-2xl bg-blue-100 text-brand-blue flex items-center justify-center text-3xl shadow-sm">
+                <i class="fa-solid fa-keyboard"></i>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-brand-blue border border-blue-200">
+                Turmas Acolhedoras
+              </span>
+            </div>
+
+            <h3 class="text-2xl sm:text-3xl font-black font-heading text-brand-navy mb-3">
+              Aulas de Teclado
+            </h3>
+
+            <p class="text-slate-600 leading-relaxed text-sm sm:text-base mb-6">
+              O teclado proporciona uma compreensão visual e auditiva profunda da música. Ensinamos escalas, acordes, coordenação motora entre as duas mãos e noções de harmonia com acompanhamento dedicado.
+            </p>
+
+            <!-- TÓPICOS -->
+            <ul class="space-y-3 text-sm text-slate-700 mb-8">
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>Reconhecimento das notas e leitura de partituras/cifras</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>Independência e sincronia das mãos</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>Compreensão de timbres, ritmos e arranjos</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>Aulas práticas no Colégio Esmeralda</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-xs text-slate-500">
+              <p class="font-bold text-slate-700">📅 Domingos • 9h às 11h</p>
+              <p>👧👦 A partir de 9 anos</p>
+            </div>
+            <a href="https://wa.me/5511951019978?text=Ol%C3%A1!%20Tenho%20interesse%20em%20iniciar%20as%20aulas%20de%20TECLADO%20na%20ASCAN" target="_blank" 
+               class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full font-bold text-xs text-white bg-brand-blue hover:bg-blue-600 shadow-md transition-all">
+              <i class="fa-brands fa-whatsapp"></i> Inscrição de Teclado
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- BANNER EXPLICATIVO INFORMATIVO -->
+      <div class="mt-12 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-brand-blue text-white flex items-center justify-center text-xl shrink-0">
+            <i class="fa-solid fa-circle-info"></i>
+          </div>
+          <div>
+            <h4 class="font-bold text-brand-navy text-lg">Não tem instrumento próprio para começar?</h4>
+            <p class="text-slate-600 text-sm mt-0.5">Não deixe de vir! A ASCAN empresta instrumentos para você aprender durante as aulas no colégio.</p>
+          </div>
+        </div>
+        <a href="https://wa.me/5511951019978?text=Ol%C3%A1%2C%20quero%20tirar%20uma%20d%C3%BAvida%20sobre%20as%20aulas%20da%20ASCAN" target="_blank" class="shrink-0 px-6 py-3 bg-white text-brand-blue font-bold text-xs rounded-full border border-blue-200 hover:bg-blue-50 transition-colors shadow-sm">
+          Tirar Dúvidas no WhatsApp
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- GALERIA INTERATIVA DE FOTOS                                               -->
+  <!-- ========================================================================= -->
+  <section id="galeria" class="py-20 bg-slate-50 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+        <div>
+          <span class="inline-block text-xs font-black tracking-widest text-brand-blue uppercase bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+            Nossos Momentos
+          </span>
+          <h2 class="text-3xl sm:text-4xl font-black font-heading text-brand-navy mt-3">
+            A ASCAN em Imagens
+          </h2>
+          <p class="text-slate-600 mt-2 text-base">
+            Registros reais de encontros, ensaios dominicais e apresentações com nossos alunos e voluntários.
+          </p>
+        </div>
+        <p class="text-xs text-slate-500 font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-magnifying-glass-plus text-brand-blue"></i> Clique em qualquer foto para ampliar
+        </p>
+      </div>
+
+      <!-- GRID COM AS 8 FOTOS REAIS DA ONG -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6" id="galleryGrid">
+        
+        <!-- FOTO 1 -->
+        <div class="relative group rounded-2xl overflow-hidden shadow-sm aspect-square bg-slate-200 cursor-pointer" onclick="openLightbox('./assets/img/gallery_1.jpg', 'Ensaio e prática de violão com alunos da ASCAN')">
+          <img src="./assets/img/gallery_1.jpg" alt="ASCAN Momento 1" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&w=600&q=80';">
+          <div class="absolute inset-0 bg-brand-navy/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white p-3 text-center">
+            <i class="fa-solid fa-magnifying-glass-plus text-2xl"></i>
+          </div>
+        </div>
+
+        <!-- FOTO 2 -->
+        <div class="relative group rounded-2xl overflow-hidden shadow-sm aspect-square bg-slate-200 cursor-pointer" onclick="openLightbox('./assets/img/gallery_2.jpg', 'Concentração e postura nas cordas do violão')">
+          <img src="./assets/img/gallery_2.jpg" alt="ASCAN Momento 2" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80';">
+          <div class="absolute inset-0 bg-brand-navy/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white p-3 text-center">
+            <i class="fa-solid fa-magnifying-glass-plus text-2xl"></i>
+          </div>
+        </div>
+
+        <!-- FOTO 3 -->
+        <div class="relative group rounded-2xl overflow-hidden shadow-sm aspect-square bg-slate-200 cursor-pointer" onclick="openLightbox('./assets/img/gallery_3.jpg', 'Aulas dominicais de teclado e harmonia')">
+          <img src="./assets/img/gallery_3.jpg" alt="ASCAN Momento 3" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1520523839898-50712702758d?auto=format&fit=crop&w=600&q=80';">
+          <div class="absolute inset-0 bg-brand-navy/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white p-3 text-center">
+            <i class="fa-solid fa-magnifying-glass-plus text-2xl"></i>
+          </div>
+        </div>
+
+        <!-- FOTO 4 -->
+        <div class="relative group rounded-2xl overflow-hidden shadow-sm aspect-square bg-slate-200 cursor-pointer" onclick="openLightbox('./assets/img/gallery_4.jpg', 'Apresentações musicais e integração comunitária')">
+          <img src="./assets/img/gallery_4.jpg" alt="ASCAN Momento 4" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=600&q=80';">
+          <div class="absolute inset-0 bg-brand-navy/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white p-3 text-center">
+            <i class="fa-solid fa-magnifying-glass-plus text-2xl"></i>
+          </div>
+        </div>
+
+        <!-- FOTO 5 -->
+        <div class="relative group rounded-2xl overflow-hidden shadow-sm aspect-square bg-slate-200 cursor-pointer" onclick="openLightbox('./assets/img/gallery_5.jpg', 'Dedicação dos professores voluntários e alunos')">
+          <img src="./assets/img/gallery_5.jpg" alt="ASCAN Momento 5" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80';">
+          <div class="absolute inset-0 bg-brand-navy/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white p-3 text-center">
+            <i class="fa-solid fa-magnifying-glass-plus text-2xl"></i>
+          </div>
+        </div>
+
+        <!-- FOTO 6 -->
+        <div class="relative group rounded-2xl overflow-hidden shadow-sm aspect-square bg-slate-200 cursor-pointer" onclick="openLightbox('./assets/img/gallery_6.jpg', 'Convivência acolhedora no Colégio Esmeralda')">
+          <img src="./assets/img/gallery_6.jpg" alt="ASCAN Momento 6" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?auto=format&fit=crop&w=600&q=80';">
+          <div class="absolute inset-0 bg-brand-navy/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white p-3 text-center">
+            <i class="fa-solid fa-magnifying-glass-plus text-2xl"></i>
+          </div>
+        </div>
+
+        <!-- FOTO 7 -->
+        <div class="relative group rounded-2xl overflow-hidden shadow-sm aspect-square bg-slate-200 cursor-pointer" onclick="openLightbox('./assets/img/gallery_7.jpg', 'Música compartilhada entre diferentes gerações')">
+          <img src="./assets/img/gallery_7.jpg" alt="ASCAN Momento 7" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=600&q=80';">
+          <div class="absolute inset-0 bg-brand-navy/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white p-3 text-center">
+            <i class="fa-solid fa-magnifying-glass-plus text-2xl"></i>
+          </div>
+        </div>
+
+        <!-- FOTO 8 -->
+        <div class="relative group rounded-2xl overflow-hidden shadow-sm aspect-square bg-slate-200 cursor-pointer" onclick="openLightbox('./assets/img/gallery_8.jpg', 'Alegria e aprendizado nos domingos da ASCAN')">
+          <img src="./assets/img/gallery_8.jpg" alt="ASCAN Momento 8" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&w=600&q=80';">
+          <div class="absolute inset-0 bg-brand-navy/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white p-3 text-center">
+            <i class="fa-solid fa-magnifying-glass-plus text-2xl"></i>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PODCAST & VÍDEO (EMBED MULTIMÍDIA)                                       -->
+  <!-- ========================================================================= -->
+  <section id="video" class="py-20 bg-brand-deep text-white relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+      
+      <span class="inline-block text-xs font-black tracking-widest text-amber-400 uppercase bg-amber-400/10 px-4 py-1.5 rounded-full border border-amber-400/20 mb-4">
+        <i class="fa-solid fa-podcast mr-1.5"></i> Conheça Nossa Trajetória em Vídeo
+      </span>
+
+      <h2 class="text-3xl sm:text-4xl font-black font-heading leading-tight mb-4">
+        A ASCAN em Podcast: História, Desafios e Conquistas
+      </h2>
+
+      <p class="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto mb-10">
+        Assista à participação da ASCAN e conheça os bastidores, a dedicação dos fundadores e o impacto transformador da música em nossa comunidade.
+      </p>
+
+      <!-- CONTAINER DO VÍDEO YOUTUBE RESPONSIVO -->
+      <div class="relative rounded-3xl overflow-hidden shadow-2xl border border-white/20 aspect-video bg-black/60 max-w-4xl mx-auto">
+        <iframe 
+          class="w-full h-full"
+          src="https://www.youtube.com/embed/f6GX6hdrw4k" 
+          title="Podcast com a ASCAN - Música que Transforma Vidas" 
+          frameborder="0" 
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+          allowfullscreen>
+        </iframe>
+      </div>
+
+      <div class="mt-8">
+        <a href="https://www.youtube.com/live/f6GX6hdrw4k?is=DqAQuQJWvkRj6C8Q" target="_blank" 
+           class="inline-flex items-center gap-2 text-amber-300 hover:text-amber-200 font-bold text-sm underline underline-offset-8 transition-colors">
+          <i class="fa-brands fa-youtube text-red-500 text-lg"></i> Abrir gravação completa diretamente no YouTube <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- COMO APOIAR: DOAÇÃO PIX & INSTRUMENTOS                                    -->
+  <!-- ========================================================================= -->
+  <section id="apoie" class="py-20 bg-amber-50/50 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="inline-block text-xs font-black tracking-widest text-amber-700 uppercase bg-amber-100 px-3.5 py-1 rounded-full border border-amber-200">
+          Solidariedade & Manutenção
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-black font-heading text-brand-navy mt-3">
+          Ajude a Música a Continuar Soando
+        </h2>
+        <p class="text-slate-600 mt-4 text-base sm:text-lg">
+          A ASCAN é 100% gratuita para a comunidade. Cada corda trocada e cada instrumento novo dependem do apoio de amigos e parceiros como você.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        <!-- CARD 1: DOAÇÃO VIA PIX COM QR CODE E COPIAR CHAVE -->
+        <div class="lg:col-span-6 bg-white rounded-3xl p-8 sm:p-10 shadow-soft border border-amber-200/80 flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-40 h-40 bg-amber-400/10 rounded-full blur-2xl"></div>
+
+          <div>
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl font-bold shadow-sm">
+                <i class="fa-solid fa-hand-holding-dollar"></i>
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold text-brand-navy">Doação Rápida via PIX</h3>
+                <p class="text-xs text-slate-500 font-medium">Qualquer valor faz a diferença real</p>
+              </div>
+            </div>
+
+            <p class="text-slate-600 text-sm leading-relaxed mb-6">
+              Você pode contribuir com manutenção de violões, compra de encordoamentos, palhetas, teclados e materiais didáticos para as crianças.
+            </p>
+
+            <!-- CAIXA DE CHAVE PIX INTERATIVA -->
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-6">
+              <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
+                <span>Chave PIX Oficial (E-mail):</span>
+                <span class="text-emerald-600 font-semibold"><i class="fa-solid fa-shield-halved"></i> Chave Verificada</span>
+              </p>
+              <div class="flex flex-col sm:flex-row items-center gap-3">
+                <div class="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 font-mono text-sm sm:text-base font-bold text-brand-navy select-all break-all text-center sm:text-left" id="pixKeyText">
+                  ascanmusica@gmail.com
+                </div>
+                <button type="button" onclick="copyPixKey()" id="copyPixBtn" class="w-full sm:w-auto shrink-0 px-6 py-3 rounded-xl font-bold text-xs bg-brand-blue hover:bg-blue-700 text-white shadow-md transition-all flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-copy"></i> <span>Copiar Chave</span>
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-2 text-center sm:text-left">
+                Favorecido: <strong>Associação Cultural Alfredo do Nascimento</strong>
+              </p>
+            </div>
+
+            <!-- RÉGUA DE IMPACTO TRANSPARENTE -->
+            <div class="space-y-3 pt-2">
+              <p class="text-xs font-bold text-slate-700 uppercase tracking-wider">Onde sua doação é aplicada:</p>
+              <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="p-3 bg-amber-50/80 rounded-xl border border-amber-100">
+                  <p class="font-extrabold text-amber-700 text-sm">R$ 25</p>
+                  <p class="text-slate-600 text-[11px] mt-0.5">Encordoamento e palhetas</p>
+                </div>
+                <div class="p-3 bg-blue-50/80 rounded-xl border border-blue-100">
+                  <p class="font-extrabold text-brand-blue text-sm">R$ 50</p>
+                  <p class="text-slate-600 text-[11px] mt-0.5">Manutenção e afinação</p>
+                </div>
+                <div class="p-3 bg-emerald-50/80 rounded-xl border border-emerald-100">
+                  <p class="font-extrabold text-emerald-700 text-sm">R$ 100+</p>
+                  <p class="text-slate-600 text-[11px] mt-0.5">Material p/ novos alunos</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="mt-8 pt-4 border-t border-slate-100 text-center">
+            <span class="text-xs text-slate-500 font-medium">Agradecemos de coração cada apoio recebido! 💙</span>
+          </div>
+
+        </div>
+
+        <!-- CARD 2: DOE UM INSTRUMENTO USADO -->
+        <div class="lg:col-span-6 bg-brand-navy text-white rounded-3xl p-8 sm:p-10 shadow-xl border border-white/10 flex flex-col justify-between relative overflow-hidden">
+          <div class="absolute -bottom-10 -right-10 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl"></div>
+
+          <div>
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-14 h-14 rounded-2xl bg-white/10 text-amber-400 flex items-center justify-center text-2xl font-bold border border-white/15 shadow-sm">
+                <i class="fa-solid fa-music"></i>
+              </div>
+              <div>
+                <h3 class="text-2xl font-bold text-white">Doe um Instrumento Musical</h3>
+                <p class="text-xs text-amber-300 font-medium">Dê nova vida a um instrumento parado</p>
+              </div>
+            </div>
+
+            <p class="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
+              Tem um <strong>violão, teclado, cabos, capa, afinador ou suporte</strong> que não está mais usando? Esse instrumento pode se transformar na oportunidade de vida para uma criança ou jovem aprender música.
+            </p>
+
+            <div class="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-6 mb-8 text-sm">
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full bg-amber-400 text-brand-deep flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</div>
+                <p class="text-slate-200"><strong>Qualquer estado:</strong> Mesmo instrumentos que precisam de pequenos ajustes ou novas cordas são bem-vindos!</p>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full bg-amber-400 text-brand-deep flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</div>
+                <p class="text-slate-200"><strong>Retirada combinada:</strong> Dependendo da sua região em São Paulo, podemos combinar a retirada no seu endereço.</p>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full bg-amber-400 text-brand-deep flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">3</div>
+                <p class="text-slate-200"><strong>Transparência:</strong> Seu instrumento vai diretamente para as mãos de um aluno do projeto.</p>
+              </div>
+            </div>
+
+          </div>
+
+          <div>
+            <a href="https://wa.me/5511951019978?text=Ol%C3%A1%2C%20gostaria%20de%20doar%20um%20instrumento%20musical%20para%20a%20ASCAN!" target="_blank" 
+               class="w-full inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-heading font-bold text-base text-brand-deep bg-amber-400 hover:bg-amber-300 shadow-gold transition-all duration-300 transform hover:-translate-y-0.5">
+              <i class="fa-brands fa-whatsapp text-lg"></i> Quero Doar um Instrumento pelo WhatsApp
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- SEJA UM VOLUNTÁRIO (FORMULÁRIO MODERNO & DIRETO)                          -->
+  <!-- ========================================================================= -->
+  <section id="voluntario" class="py-20 bg-white relative">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-2xl mx-auto mb-12">
+        <span class="inline-block text-xs font-black tracking-widest text-brand-blue uppercase bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+          Junte-se a Nós
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-black font-heading text-brand-navy mt-3">
+          Venha Ser um Voluntário da ASCAN
+        </h2>
+        <p class="text-slate-600 mt-3 text-base">
+          A ASCAN é movida por corações generosos. Se você toca algum instrumento, tem experiência em organização, eventos, comunicação ou apenas vontade sincera de ajudar, queremos muito te conhecer!
+        </p>
+      </div>
+
+      <!-- FORMULÁRIO -->
+      <div class="bg-slate-50 border border-slate-200/80 rounded-3xl p-6 sm:p-10 shadow-soft">
+        
+        <form id="volunteerForm" onsubmit="handleVolunteerSubmit(event)" class="space-y-6">
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            
+            <div>
+              <label for="volName" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Seu Nome Completo *
+              </label>
+              <input type="text" id="volName" required placeholder="Ex: Maria da Silva" 
+                     class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all text-sm">
+            </div>
+
+            <div>
+              <label for="volPhone" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                WhatsApp / Telefone *
+              </label>
+              <input type="tel" id="volPhone" required placeholder="Ex: (11) 99999-9999" 
+                     class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all text-sm">
+            </div>
+
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            
+            <div>
+              <label for="volEmail" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Seu E-mail *
+              </label>
+              <input type="email" id="volEmail" required placeholder="Ex: seuemail@exemplo.com" 
+                     class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all text-sm">
+            </div>
+
+            <div>
+              <label for="volArea" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Como gostaria de colaborar? *
+              </label>
+              <select id="volArea" required class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all text-sm text-slate-700">
+                <option value="">Selecione uma área...</option>
+                <option value="Ensino de Violão">Ensino de Violão</option>
+                <option value="Ensino de Teclado">Ensino de Teclado</option>
+                <option value="Organização e Apoio aos Domingos">Organização e Apoio aos Domingos</option>
+                <option value="Comunicação e Mídias Sociais">Comunicação e Mídias Sociais</option>
+                <option value="Manutenção de Instrumentos">Manutenção de Instrumentos</option>
+                <option value="Outra área">Outra área</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div>
+            <label for="volMessage" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Conte um pouco sobre você e sua disponibilidade *
+            </label>
+            <textarea id="volMessage" rows="4" required placeholder="Fale sobre seus conhecimentos, experiências e por que gostaria de se juntar à ASCAN..." 
+                      class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-all text-sm"></textarea>
+          </div>
+
+          <!-- BOTÕES DE ENVIO DUPLOS: WHATSAPP OU EMAIL -->
+          <div class="pt-4 flex flex-col sm:flex-row items-center gap-4">
+            <button type="submit" class="w-full sm:w-1/2 py-4 px-6 rounded-xl font-heading font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-500 shadow-md transition-all flex items-center justify-center gap-2">
+              <i class="fa-brands fa-whatsapp text-lg"></i> Enviar pelo WhatsApp
+            </button>
+            <button type="button" onclick="sendViaEmail()" class="w-full sm:w-1/2 py-4 px-6 rounded-xl font-heading font-bold text-sm text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 transition-all flex items-center justify-center gap-2">
+              <i class="fa-solid fa-envelope text-brand-blue"></i> Enviar por E-mail
+            </button>
+          </div>
+
+          <p class="text-center text-xs text-slate-500">
+            🔒 Seus dados serão utilizados apenas pela coordenação da ASCAN para contato voluntário.
+          </p>
+
+        </form>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- LOCALIZAÇÃO & CONTATO                                                     -->
+  <!-- ========================================================================= -->
+  <section id="contato" class="py-20 bg-slate-50 relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
+        
+        <!-- INFORMAÇÕES DE CONTATO -->
+        <div class="lg:col-span-5 space-y-6 flex flex-col justify-between">
+          <div>
+            <span class="inline-block text-xs font-black tracking-widest text-brand-blue uppercase bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+              Onde Estamos
+            </span>
+            <h2 class="text-3xl sm:text-4xl font-black font-heading text-brand-navy mt-3">
+              Venha Conhecer a ASCAN Pessoalmente
+            </h2>
+            <p class="text-slate-600 mt-3 text-sm sm:text-base">
+              Nossos encontros e aulas acontecem todos os domingos no acolhedor espaço do Colégio Esmeralda, no Jardim Tremembé, Zona Norte de São Paulo.
+            </p>
+          </div>
+
+          <!-- CARDS DE INFORMAÇÃO -->
+          <div class="space-y-4">
+            
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 flex items-start gap-4 shadow-sm">
+              <div class="w-12 h-12 rounded-xl bg-blue-100 text-brand-blue flex items-center justify-center text-xl shrink-0">
+                <i class="fa-solid fa-location-dot"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-brand-navy text-sm">Local das Aulas</h4>
+                <p class="text-slate-600 text-xs sm:text-sm mt-0.5">
+                  <strong>Colégio Esmeralda</strong><br>
+                  Avenida Maria Amália Lopes de Azevedo, 2167<br>
+                  Jardim Tremembé — São Paulo/SP — CEP 02350-002
+                </p>
+                <a href="https://maps.google.com/?q=Avenida+Maria+Am%C3%A1lia+Lopes+de+Azevedo,+2167+-+Jardim+Trememb%C3%A9,+S%C3%A3o+Paulo" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-brand-blue mt-2 hover:underline">
+                  Abrir no Google Maps <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                </a>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 flex items-start gap-4 shadow-sm">
+              <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl shrink-0">
+                <i class="fa-solid fa-clock"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-brand-navy text-sm">Dias e Horários</h4>
+                <p class="text-slate-600 text-xs sm:text-sm mt-0.5">
+                  Todos os <strong>Domingos</strong>, das <strong>09h00 às 11h00</strong>.
+                </p>
+              </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 flex items-start gap-4 shadow-sm">
+              <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl shrink-0">
+                <i class="fa-brands fa-whatsapp"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-brand-navy text-sm">WhatsApp Oficial</h4>
+                <p class="text-slate-600 text-xs sm:text-sm mt-0.5">
+                  (11) 95101-9978 • Atendimento rápido e esclarecimento de dúvidas.
+                </p>
+                <a href="https://wa.me/5511951019978" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 mt-2 hover:underline">
+                  Iniciar conversa agora <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+          <div></div>
+
+        </div>
+
+        <!-- MAPA INTERATIVO / PREVIEW -->
+        <div class="lg:col-span-7 bg-white rounded-3xl overflow-hidden border border-slate-200 shadow-soft min-h-[350px] flex flex-col">
+          <div class="p-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between text-xs font-semibold text-slate-600">
+            <span><i class="fa-solid fa-map-location-dot text-brand-blue mr-1.5"></i> Mapa da Região (Zona Norte / Tremembé)</span>
+            <span class="text-emerald-600"><i class="fa-solid fa-circle text-[8px]"></i> Fácil acesso</span>
+          </div>
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3660.1037586520935!2d-46.59253452467319!3d-23.45672957887192!2m3!1f0!2f0!3f0!3m2!1i1024!2f768!4f13.1!3m3!1m2!1s0x94cef5ea7519967d%3A0xc39281a84f3e6912!2sAv.%20Maria%20Am%C3%A1lia%20Lopes%20de%20Azevedo%2C%202167%20-%20Trememb%C3%A9%2C%20S%C3%A3o%20Paulo%20-%20SP%2C%2002350-002!5e0!3m2!1spt-BR!2sbr!4v1710000000000!5m2!1spt-BR!2sbr" 
+            class="w-full h-full min-h-[320px] flex-1 border-0" 
+            allowfullscreen="" 
+            loading="lazy" 
+            referrerpolicy="no-referrer-when-downgrade">
+          </iframe>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- PERGUNTAS FREQUENTES (FAQ)                                                -->
+  <!-- ========================================================================= -->
+  <section class="py-20 bg-white relative">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-2xl mx-auto mb-14">
+        <span class="inline-block text-xs font-black tracking-widest text-brand-blue uppercase bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+          Tire suas Dúvidas
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-black font-heading text-brand-navy mt-3">
+          Perguntas Frequentes
+        </h2>
+        <p class="text-slate-600 mt-2 text-base">
+          Tudo o que você precisa saber sobre o projeto, inscrições e como colaborar.
+        </p>
+      </div>
+
+      <div class="space-y-4" id="faqAccordion">
+        
+        <!-- FAQ 1 -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden">
+          <button type="button" onclick="toggleFaq(this)" class="w-full px-6 py-5 text-left font-bold text-brand-navy flex items-center justify-between hover:bg-slate-50 transition-colors">
+            <span class="text-base sm:text-lg">1. As aulas são realmente 100% gratuitas?</span>
+            <i class="fa-solid fa-chevron-down text-slate-400 transition-transform duration-300"></i>
+          </button>
+          <div class="px-6 pb-5 text-sm sm:text-base text-slate-600 leading-relaxed hidden">
+            Sim! A ASCAN é uma associação cultural sem fins lucrativos. Não cobramos matrícula, mensalidade ou taxas de participação. Nosso trabalho é sustentado pelo voluntariado e por doações espontâneas da comunidade.
+          </div>
+        </div>
+
+        <!-- FAQ 2 -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden">
+          <button type="button" onclick="toggleFaq(this)" class="w-full px-6 py-5 text-left font-bold text-brand-navy flex items-center justify-between hover:bg-slate-50 transition-colors">
+            <span class="text-base sm:text-lg">2. Preciso ter meu próprio violão ou teclado para começar?</span>
+            <i class="fa-solid fa-chevron-down text-slate-400 transition-transform duration-300"></i>
+          </button>
+          <div class="px-6 pb-5 text-sm sm:text-base text-slate-600 leading-relaxed hidden">
+            Não é obrigatório. Dispomos de violões e teclados no Colégio Esmeralda para uso dos alunos durante as atividades. Caso você tenha o seu em casa, recomendamos levar para se habituar ao seu próprio instrumento.
+          </div>
+        </div>
+
+        <!-- FAQ 3 -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden">
+          <button type="button" onclick="toggleFaq(this)" class="w-full px-6 py-5 text-left font-bold text-brand-navy flex items-center justify-between hover:bg-slate-50 transition-colors">
+            <span class="text-base sm:text-lg">3. A partir de que idade é permitido participar?</span>
+            <i class="fa-solid fa-chevron-down text-slate-400 transition-transform duration-300"></i>
+          </button>
+          <div class="px-6 pb-5 text-sm sm:text-base text-slate-600 leading-relaxed hidden">
+            Recebemos alunos a partir de 9 anos de idade. Jovens, adolescentes e adultos também são muito bem-vindos em nossas turmas!
+          </div>
+        </div>
+
+        <!-- FAQ 4 -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden">
+          <button type="button" onclick="toggleFaq(this)" class="w-full px-6 py-5 text-left font-bold text-brand-navy flex items-center justify-between hover:bg-slate-50 transition-colors">
+            <span class="text-base sm:text-lg">4. Como posso doar um instrumento musical?</span>
+            <i class="fa-solid fa-chevron-down text-slate-400 transition-transform duration-300"></i>
+          </button>
+          <div class="px-6 pb-5 text-sm sm:text-base text-slate-600 leading-relaxed hidden">
+            Basta enviar uma mensagem no nosso WhatsApp <a href="https://wa.me/5511951019978" class="text-brand-blue font-bold">(11) 95101-9978</a> informando o instrumento e seu bairro. Podemos combinar a entrega no Colégio Esmeralda em um domingo ou organizar a retirada conforme a região de São Paulo.
+          </div>
+        </div>
+
+        <!-- FAQ 5 -->
+        <div class="border border-slate-200 rounded-2xl overflow-hidden">
+          <button type="button" onclick="toggleFaq(this)" class="w-full px-6 py-5 text-left font-bold text-brand-navy flex items-center justify-between hover:bg-slate-50 transition-colors">
+            <span class="text-base sm:text-lg">5. Como funciona a candidatura para ser voluntário?</span>
+            <i class="fa-solid fa-chevron-down text-slate-400 transition-transform duration-300"></i>
+          </button>
+          <div class="px-6 pb-5 text-sm sm:text-base text-slate-600 leading-relaxed hidden">
+            Você pode preencher nosso formulário online acima ou mandar uma mensagem no WhatsApp. Não é necessário ser músico profissional: temos vagas para suporte geral, recepção, mídias digitais e organização.
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================= -->
+  <!-- FOOTER MODERNO & COMPLETO                                                 -->
+  <!-- ========================================================================= -->
+  <footer class="bg-brand-deep text-white pt-16 pb-12 border-t border-white/10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-white/10">
+        
+        <!-- SOBRE A ONG -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="flex items-center gap-3">
+            <div class="h-12 bg-white rounded-lg p-1 flex items-center justify-center">
+              <img src="./assets/img/logo.jpg" alt="ASCAN Logo" class="h-full w-auto object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/150x50?text=ASCAN';">
+            </div>
+            <span class="font-heading text-xl font-black text-white">ASCAN</span>
+          </div>
+          <p class="text-slate-400 text-sm leading-relaxed max-w-sm">
+            <strong>Associação Cultural Alfredo do Nascimento</strong> • Entidade sem fins lucrativos promovendo cidadania, cultura e disciplina através da música desde 1989.
+          </p>
+          <div class="pt-2 text-xs text-amber-400 font-semibold flex items-center gap-2">
+            <i class="fa-solid fa-heart text-rose-500"></i> Música, aprendizado, afeto e comunidade. 🎶
+          </div>
+        </div>
+
+        <!-- LINKS RÁPIDOS -->
+        <div class="lg:col-span-3 space-y-3">
+          <h4 class="font-bold text-white text-sm uppercase tracking-wider">Navegação</h4>
+          <ul class="space-y-2 text-sm text-slate-400">
+            <li><a href="#inicio" class="hover:text-amber-400 transition-colors">Início</a></li>
+            <li><a href="#historia" class="hover:text-amber-400 transition-colors">Nossa História</a></li>
+            <li><a href="#aulas" class="hover:text-amber-400 transition-colors">Aulas de Violão e Teclado</a></li>
+            <li><a href="#galeria" class="hover:text-amber-400 transition-colors">Galeria de Fotos</a></li>
+            <li><a href="#video" class="hover:text-amber-400 transition-colors">Podcast da ASCAN</a></li>
+            <li><a href="#apoie" class="hover:text-amber-400 transition-colors">Doações & Instrumentos</a></li>
+          </ul>
+        </div>
+
+        <!-- CONTATOS & SEDE -->
+        <div class="lg:col-span-4 space-y-3">
+          <h4 class="font-bold text-white text-sm uppercase tracking-wider">Atendimento & Sede</h4>
+          <ul class="space-y-2.5 text-sm text-slate-400">
+            <li class="flex items-start gap-2.5">
+              <i class="fa-solid fa-location-dot text-amber-400 mt-1"></i>
+              <span>Colégio Esmeralda — Av. Maria Amália Lopes de Azevedo, 2167, Jardim Tremembé, São Paulo - SP</span>
+            </li>
+            <li class="flex items-center gap-2.5">
+              <i class="fa-brands fa-whatsapp text-emerald-400"></i>
+              <a href="https://wa.me/5511951019978" target="_blank" class="hover:text-white transition-colors">(11) 95101-9978</a>
+            </li>
+            <li class="flex items-center gap-2.5">
+              <i class="fa-solid fa-envelope text-amber-400"></i>
+              <a href="mailto:ascanmusica@gmail.com" class="hover:text-white transition-colors">ascanmusica@gmail.com</a>
+            </li>
+            <li class="flex items-center gap-2.5">
+              <i class="fa-solid fa-clock text-blue-400"></i>
+              <span>Domingos: das 09h00 às 11h00</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- COPYRIGHT & CRÉDITOS -->
+      <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 text-center sm:text-left">
+        <div>
+          &copy; 1989 - 2026 <strong>ASCAN</strong>. Todos os direitos reservados.
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="#inicio" class="hover:text-slate-400 transition-colors">Voltar ao Topo <i class="fa-solid fa-arrow-up ml-1"></i></a>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- BOTÃO FLUTUANTE DO WHATSAPP (COM PULSAR GLOW)                             -->
+  <!-- ========================================================================= -->
+  <a href="https://wa.me/5511951019978?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20ASCAN%20e%20gostaria%20de%20informa%C3%A7%C3%B5es." 
+     target="_blank" 
+     aria-label="Fale conosco no WhatsApp" 
+     class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-emerald-500 hover:bg-emerald-400 text-white rounded-full flex items-center justify-center text-3xl shadow-2xl transition-all duration-300 transform hover:scale-110 pulse-glow">
+    <i class="fa-brands fa-whatsapp"></i>
+  </a>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL LIGHTBOX PARA A GALERIA DE FOTOS                                     -->
+  <!-- ========================================================================= -->
+  <div id="lightboxModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4 transition-all duration-300" onclick="closeLightbox(event)">
+    <button type="button" onclick="closeLightbox(null)" class="absolute top-6 right-6 text-white text-3xl hover:text-amber-400 p-2 focus:outline-none z-50" aria-label="Fechar">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <div class="max-w-4xl max-h-[85vh] flex flex-col items-center justify-center p-2" onclick="event.stopPropagation()">
+      <img id="lightboxImg" src="" alt="Ampliação" class="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl border border-white/20">
+      <p id="lightboxCaption" class="text-white text-sm font-medium mt-4 text-center px-4 bg-black/60 py-2 rounded-full"></p>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TOAST NOTIFICATION (FEEDBACK VISUAL)                                      -->
+  <!-- ========================================================================= -->
+  <div id="toastNotification" class="fixed bottom-24 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-brand-navy text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-3 text-sm">
+    <i class="fa-solid fa-circle-check text-emerald-400 text-lg" id="toastIcon"></i>
+    <span id="toastMessage" class="font-semibold">Notificação</span>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- SCRIPTS INTERATIVOS                                                       -->
+  <!-- ========================================================================= -->
+  <script>
+    // 1. Menu Mobile Drawer
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const menuIcon = document.getElementById('menuIcon');
+    const mobileNavLinks = document.querySelectorAll('.mobile-nav-link');
+
+    mobileMenuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+      if (mobileMenu.classList.contains('hidden')) {
+        menuIcon.classList.remove('fa-xmark');
+        menuIcon.classList.add('fa-bars');
+      } else {
+        menuIcon.classList.remove('fa-bars');
+        menuIcon.classList.add('fa-xmark');
+      }
+    });
+
+    mobileNavLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu.classList.add('hidden');
+        menuIcon.classList.remove('fa-xmark');
+        menuIcon.classList.add('fa-bars');
+      });
+    });
+
+    // 2. Copiar Chave PIX
+    function copyPixKey() {
+      const pixKey = 'ascanmusica@gmail.com';
+      const btn = document.getElementById('copyPixBtn');
+      
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(pixKey).then(() => {
+          showToast('✓ Chave PIX copiada com sucesso!', 'success');
+          btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>Chave Copiada!</span>';
+          btn.classList.remove('bg-brand-blue');
+          btn.classList.add('bg-emerald-600');
+          setTimeout(() => {
+            btn.innerHTML = '<i class="fa-solid fa-copy"></i> <span>Copiar Chave</span>';
+            btn.classList.remove('bg-emerald-600');
+            btn.classList.add('bg-brand-blue');
+          }, 3000);
+        }).catch(() => {
+          fallbackCopyText(pixKey);
+        });
+      } else {
+        fallbackCopyText(pixKey);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const tempInput = document.createElement('input');
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showToast('✓ Chave PIX copiada!', 'success');
+    }
+
+    // 3. Lightbox da Galeria
+    function openLightbox(src, caption) {
+      const modal = document.getElementById('lightboxModal');
+      const img = document.getElementById('lightboxImg');
+      const cap = document.getElementById('lightboxCaption');
+      
+      img.src = src;
+      cap.textContent = caption || 'Momento da ASCAN';
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox(event) {
+      const modal = document.getElementById('lightboxModal');
+      modal.classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+
+    // 4. FAQ Accordion
+    function toggleFaq(btn) {
+      const content = btn.nextElementSibling;
+      const icon = btn.querySelector('i');
+      
+      content.classList.toggle('hidden');
+      if (content.classList.contains('hidden')) {
+        icon.style.transform = 'rotate(0deg)';
+      } else {
+        icon.style.transform = 'rotate(180deg)';
+      }
+    }
+
+    // 5. Toast Notification
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toastNotification');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = message;
+      if (type === 'success') {
+        toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
+      } else {
+        toastIcon.className = 'fa-solid fa-triangle-exclamation text-amber-400 text-lg';
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 3500);
+    }
+
+    // 6. Envio de Voluntário via WhatsApp e E-mail
+    function handleVolunteerSubmit(event) {
+      event.preventDefault();
+      const name = document.getElementById('volName').value.trim();
+      const phone = document.getElementById('volPhone').value.trim();
+      const email = document.getElementById('volEmail').value.trim();
+      const area = document.getElementById('volArea').value;
+      const msg = document.getElementById('volMessage').value.trim();
+
+      const text = `*Candidatura a Voluntário - ASCAN*\n\n` +
+                   `👤 *Nome:* ${name}\n` +
+                   `📱 *WhatsApp:* ${phone}\n` +
+                   `📧 *E-mail:* ${email}\n` +
+                   `🎯 *Área de Interesse:* ${area}\n\n` +
+                   `💬 *Mensagem/Sobre:* \n${msg}`;
+
+      const encoded = encodeURIComponent(text);
+      const url = `https://wa.me/5511951019978?text=${encoded}`;
+      
+      showToast('Redirecionando para o WhatsApp...', 'success');
+      setTimeout(() => {
+        window.open(url, '_blank');
+      }, 600);
+    }
+
+    function sendViaEmail() {
+      const name = document.getElementById('volName').value.trim();
+      const phone = document.getElementById('volPhone').value.trim();
+      const email = document.getElementById('volEmail').value.trim();
+      const area = document.getElementById('volArea').value;
+      const msg = document.getElementById('volMessage').value.trim();
+
+      if (!name || !email) {
+        showToast('Por favor, preencha pelo menos Nome e E-mail.', 'error');
+        return;
+      }
+
+      const subject = encodeURIComponent(`Candidatura a Voluntário - ASCAN (${name})`);
+      const body = encodeURIComponent(`Nome: ${name}\nTelefone: ${phone}\nEmail: ${email}\nÁrea de Interesse: ${area}\n\nMensagem:\n${msg}`);
+      location.href = `mailto:ascanmusica@gmail.com?subject=${subject}&body=${body}`;
+    }
+
+    // Tecla ESC fecha o lightbox
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeLightbox();
+      }
+    });
+  </script>
+</body>
+</html>

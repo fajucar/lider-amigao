@@ -1,19 +1,18 @@
-// Este service worker existiu numa versão anterior do app e causava páginas presas em
-// cache antigo mesmo depois de hard refresh. O app não registra mais service worker (ver
-// src/main.jsx), então este arquivo agora só serve para remover, de forma automática, o
-// registro antigo de quem já tinha instalado a versão anterior — sem exigir limpeza manual.
-self.addEventListener("install", () => {
+// Service Worker PWA para Líder Amigona
+// Política Network-First (sempre busca a versão mais recente na rede)
+self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    (async () => {
-      const nomes = await caches.keys();
-      await Promise.all(nomes.map((nome) => caches.delete(nome)));
-      await self.registration.unregister();
-      const clientes = await self.clients.matchAll({ type: "window" });
-      clientes.forEach((cliente) => cliente.navigate(cliente.url));
-    })()
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener("fetch", (event) => {
+  // Pass-through: sempre busca da rede ao vivo para não prender código antigo
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
   );
 });
