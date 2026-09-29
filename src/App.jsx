@@ -409,12 +409,43 @@ async function callCerebras(system, messages, options = {}) {
   }
 }
 
+async function callClaudeChat(system, messages, options = {}) {
+  registrarChamadaIA();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
+    const res = await fetch("/api/anthropic/v1/messages", {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-3-5-haiku-20241022",
+        max_tokens: 450,
+        system,
+        messages: messages.map((m) => ({
+          role: m.role === "assistant" ? "assistant" : "user",
+          content: m.content,
+        })),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error = new Error(data.error?.message || `A API Anthropic retornou erro ${res.status}.`);
+      error.status = res.status;
+      throw error;
+    }
+    return data.content?.filter((item) => item.type === "text").map((item) => item.text).join("\n") || "";
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function callClaudeVision(system, imageDataUrl, text) {
   const res = await fetch("/api/anthropic/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model: "claude-3-5-sonnet-20241022",
       max_tokens: 450,
       system,
       messages: [{
@@ -438,8 +469,7 @@ async function callClaudeVision(system, imageDataUrl, text) {
   return data.content?.filter((item) => item.type === "text").map((item) => item.text).join("\n") || "";
 }
 
-// Ordem de fallback: Gemini (principal, free tier) -> Groq (backup 1, 2 tentativas) ->
-// Cerebras (backup 2). Cada provedor só entra se o(s) anterior(es) falharem de verdade.
+// Ordem de fallback: Gemini (principal) -> Groq (backup 1) -> Anthropic Claude (backup 2) -> Cerebras (backup 3).
 async function callChatWithFallback(system, messages, options = {}) {
   let erroGemini;
   try {
@@ -459,18 +489,25 @@ async function callChatWithFallback(system, messages, options = {}) {
   } catch (e) {
     erroGroq = e;
     console.warn("Lider Amigão: Groq falhou na 1ª tentativa", erroGroq);
-    // Falhas de Groq costumam ser engasgos passageiros (limite de requisições, timeout
-    // pontual). Uma segunda tentativa rápida resolve a maioria antes de recorrer ao
-    // Cerebras, que é só um backup e não deve ser o caminho normal.
     await new Promise((r) => setTimeout(r, 800));
     try {
       const resposta = await callGroq(system, messages, { json: true });
       console.log("Lider Amigão: resposta do provedor Groq (2ª tentativa)");
       return resposta;
     } catch (erroGroq2) {
-      console.warn("Lider Amigão: Groq falhou de novo, usando Cerebras", erroGroq2);
+      console.warn("Lider Amigão: Groq falhou de novo, tentando Anthropic Claude", erroGroq2);
       erroGroq = erroGroq2;
     }
+  }
+
+  let erroClaude;
+  try {
+    const resposta = await callClaudeChat(system, messages, options);
+    console.log("Lider Amigão: resposta do provedor Anthropic Claude");
+    return resposta;
+  } catch (e) {
+    erroClaude = e;
+    console.warn("Lider Amigão: Anthropic Claude falhou, tentando Cerebras", erroClaude);
   }
 
   try {
@@ -478,15 +515,14 @@ async function callChatWithFallback(system, messages, options = {}) {
     console.log("Lider Amigão: resposta do provedor Cerebras");
     return resposta;
   } catch (erroCerebras) {
-    console.error("Lider Amigão: Gemini, Groq e Cerebras falharam", { erroGemini, erroGroq, erroCerebras });
+    console.error("Lider Amigão: Todos os provedores falharam", { erroGemini, erroGroq, erroClaude, erroCerebras });
     const erro = new Error(
-      `Gemini (status ${erroGemini.status ?? "?"}): ${erroGemini.message} | ` +
-        `Groq (status ${erroGroq.status ?? "?"}): ${erroGroq.message} | ` +
-        `Cerebras (status ${erroCerebras.status ?? "?"}): ${erroCerebras.message}`
+      `Gemini: ${erroGemini?.message || "?"} | Groq: ${erroGroq?.message || "?"} | Claude: ${erroClaude?.message || "?"} | Cerebras: ${erroCerebras?.message || "?"}`
     );
     erro.status = erroCerebras.name === "AbortError" ? "timeout" : erroCerebras.status;
-    erro.statusGroq = erroGroq.name === "AbortError" ? "timeout" : erroGroq.status;
-    erro.statusGemini = erroGemini.name === "AbortError" ? "timeout" : erroGemini.status;
+    erro.statusGroq = erroGroq?.name === "AbortError" ? "timeout" : erroGroq?.status;
+    erro.statusGemini = erroGemini?.name === "AbortError" ? "timeout" : erroGemini?.status;
+    erro.statusClaude = erroClaude?.name === "AbortError" ? "timeout" : erroClaude?.status;
     throw erro;
   }
 }
@@ -2124,7 +2160,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         signal: AbortSignal.timeout(180000),
         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
+          model: "claude-3-5-sonnet-20241022",
           max_tokens: 16000,
           messages: [
             {
@@ -2214,7 +2250,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         signal: AbortSignal.timeout(180000),
         body: JSON.stringify({
-          model: "claude-sonnet-4-6",
+          model: "claude-3-5-sonnet-20241022",
           max_tokens: 16000,
           messages: [
             {
