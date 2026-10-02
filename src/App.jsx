@@ -311,7 +311,7 @@ function linhaReferenciaRegulamento(referencia) {
 async function callGemini(system, messages, options = {}) {
   registrarChamadaIA();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 3500);
   try {
     // 800: uma frase falando vários andares da vistoria gera vários itens no JSON.
     const generationConfig = { maxOutputTokens: 800 };
@@ -354,7 +354,7 @@ async function callGemini(system, messages, options = {}) {
 async function callGroq(system, messages, options = {}) {
   registrarChamadaIA();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 3500);
   try {
     const res = await fetch("/api/groq/chat/completions", {
       method: "POST",
@@ -382,7 +382,7 @@ async function callGroq(system, messages, options = {}) {
 async function callCerebras(system, messages, options = {}) {
   registrarChamadaIA();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
+  const timeout = setTimeout(() => controller.abort(), 3500);
   try {
     const res = await fetch("/api/cerebras/chat/completions", {
       method: "POST",
@@ -2424,12 +2424,12 @@ export default function App() {
       // os artigos mais relevantes pra esta mensagem, em src/data/regras.json (RI + Convenção já
       // extraídos dos PDFs e estruturados por capítulo/artigo), e mandamos só isso pra IA — com a
       // citação exata (fonte, capítulo, artigo) já pronta, pra IA não ter que adivinhar.
-      let { contexto: contextoRegras } = montarContextoRegras(q, regrasCondominio, { limite: 8 });
+      let { contexto: contextoRegras } = montarContextoRegras(q, regrasCondominio, { limite: 3 });
       // Pergunta de continuação ("e no domingo?", "e visitante pode?") não tem o assunto na
       // própria frase: busca de novo junto com a pergunta anterior do usuário.
       const perguntaAnterior = [...chat].reverse().find((m) => m.role === "user")?.content;
       if (perguntaAnterior && q.split(/\s+/).length <= 8) {
-        const combinado = montarContextoRegras(`${perguntaAnterior} ${q}`, regrasCondominio, { limite: 8 });
+        const combinado = montarContextoRegras(`${perguntaAnterior} ${q}`, regrasCondominio, { limite: 3 });
         // A busca garante ao menos um artigo por assunto, então os da pergunta atual continuam.
         if (combinado.contexto) contextoRegras = combinado.contexto;
       }
@@ -2597,8 +2597,14 @@ export default function App() {
       // Com as duas IAs fora do ar, ainda vale tentar responder perguntas de regra: a busca
       // local (mesma usada pra montar o contexto da IA) não depende de nenhum provedor.
       if (!foto) {
-        const { artigos } = montarContextoRegras(q, regrasCondominio, { limite: 3 });
-        if (artigos.length) {
+        // Cada conceito batido soma log(1 + total/df) ≥ ln 2, então qualquer match passaria de
+        // um limiar baixo. ln 3 exige ao menos um termo que não esteja em mais da metade dos
+        // artigos — senão o "achado" é só palavra genérica e não responde a pergunta.
+        const artigos = montarContextoRegras(q, regrasCondominio, { limite: 3 }).artigos
+          .filter((a) => a.pontos >= Math.log(3));
+        if (!artigos.length) {
+          mensagem = `${mensagem}\n\nNão encontrei isso no regulamento. Tenta reformular a pergunta ou chama o síndico.`;
+        } else {
           const trechos = artigos
             .map((a) => `📖 *${citacaoCurta(a)}*\n${a.texto}`)
             .join("\n\n");
