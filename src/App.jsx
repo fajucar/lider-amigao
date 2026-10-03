@@ -234,6 +234,69 @@ function buscarNoRegulamento(regulamento, consulta) {
   return resultados;
 }
 
+// Trecho da Convenção pro chat. Pergunta com número de apartamento ("vagas do 238 torre 2") usa
+// a mesma busca da caixa "Buscar vaga / apartamento" (buscarNoRegulamento), que traz TODAS as
+// linhas — o mesmo número existe em mais de uma torre — e filtra pela torre se ela foi dita.
+// Sem torre e com várias unidades, manda todas e avisa a IA pra perguntar qual torre.
+// Sem número de apartamento, cai na busca por janela (cláusulas gerais sobre vaga/garagem).
+function trechoConvencaoParaPergunta(convencao, pergunta) {
+  if (!convencao) return null;
+  const perguntaNorm = normalizarTexto(pergunta);
+  const torre = perguntaNorm.match(/\btorre\s*(\d+)\b|\bt\s?(\d+)\b/);
+  const numeroTorre = torre ? torre[1] || torre[2] : null;
+  // Números de 2+ dígitos que não são o da torre: "apartamento 238 torre 2" -> ["238"].
+  const numeros = [...new Set(
+    [...perguntaNorm.matchAll(/(^|\D)(\d{2,})(?!\d)/g)]
+      .filter((m) => !/(torre|\bt)\s*$/.test(perguntaNorm.slice(0, m.index + m[1].length)))
+      .map((m) => m[2])
+  )];
+  if (!numeros.length) return encontrarTrechoRegulamento(convencao, pergunta, { exigirNumeros: true });
+
+  const linhas = convencao.split(/\r?\n/);
+  // Torre de cada linha: a citada na própria linha, senão a do último título de torre acima dela.
+  let torreAtual = null;
+  const torreDaLinha = linhas.map((linha) => {
+    const m = normalizarTexto(linha).match(/\btorre\s*(\d+)\b/);
+    if (m) torreAtual = m[1];
+    return m ? m[1] : torreAtual;
+  });
+
+  const resultados = [];
+  for (const numero of numeros) {
+    // buscarNoRegulamento casa "238" dentro de "1238" (só barra letra antes) — aqui é número exato.
+    const exato = new RegExp(`(^|\\D)${numero}(\\D|$)`);
+    let achados = buscarNoRegulamento(convencao, numero).filter((r) => exato.test(normalizarTexto(r.linha)));
+    // "Apartamento 101: vaga 238" também tem o 238; se houver linha onde ele é a unidade, fica só ela.
+    const comoUnidade = new RegExp(`(apartamento|apto|ap|unidade|unid)\\.?\\s*(n\\W?\\s*)?${numero}(\\D|$)`);
+    const soUnidades = achados.filter((r) => comoUnidade.test(normalizarTexto(r.linha)));
+    if (soUnidades.length) achados = soUnidades;
+    if (numeroTorre) {
+      const daTorre = achados.filter((r) => torreDaLinha[r.indice] === numeroTorre);
+      if (daTorre.length) achados = daTorre;
+    }
+    resultados.push({ numero, achados: achados.sort((a, b) => a.indice - b.indice).slice(0, 10) });
+  }
+  if (!resultados.some((r) => r.achados.length)) return null;
+
+  return resultados
+    .filter((r) => r.achados.length)
+    .map(({ numero, achados }) => {
+      const texto = achados
+        .map((r) => {
+          const t = torreDaLinha[r.indice];
+          const linha = r.linha.trim();
+          return t && !/torre/i.test(linha) ? `Torre ${t}: ${linha}` : linha;
+        })
+        .join("\n");
+      const torresDistintas = new Set(achados.map((r) => torreDaLinha[r.indice]));
+      const ambiguo = achados.length > 1 && !(numeroTorre && torresDistintas.size === 1);
+      return ambiguo
+        ? `(ATENÇÃO: há ${achados.length} linhas com a unidade ${numero}${numeroTorre ? "" : " e a pergunta não diz a torre"}. Não escolha uma: mostre as opções e pergunte de qual torre é.)\n${texto}`
+        : texto;
+    })
+    .join("\n\n");
+}
+
 function destacarTermos(linhaOriginal, termos) {
   const linhaNormalizada = normalizarTexto(linhaOriginal);
   const intervalos = [];
@@ -449,6 +512,7 @@ async function callClaudeChat(system, messages, options = {}) {
 }
 
 async function callClaudeVision(system, imageDataUrl, text) {
+  logPromptDebug("Anthropic (foto)", system, [{ content: text }]);
   const res = await fetch("/api/anthropic/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -477,10 +541,26 @@ async function callClaudeVision(system, imageDataUrl, text) {
   return data.content?.filter((item) => item.type === "text").map((item) => item.text).join("\n") || "";
 }
 
+// DEBUG TEMPORÁRIO: mostra o que vai pra IA e se o trecho da Convenção está no prompt.
+const MARCA_SECAO_CONVENCAO = "TRECHO DA CONVENÇÃO DO CONDOMÍNIO RELACIONADO A ESTA MENSAGEM";
+function logPromptDebug(provedor, system, messages) {
+  const i = system.indexOf(MARCA_SECAO_CONVENCAO);
+  const secaoConvencao = i >= 0 ? system.slice(system.indexOf("\n", i) + 1) : null;
+  console.log(`[DEBUG prompt → ${provedor}]`, {
+    tamanhoPrompt: system.length,
+    inicioPrompt: system.slice(0, 500),
+    secaoConvencaoPresente: i >= 0,
+    trechoConvencao: secaoConvencao,
+    contem238: secaoConvencao ? /(^|\D)238(\D|$)/.test(secaoConvencao) : false,
+    ultimaMensagem: messages?.[messages.length - 1]?.content,
+  });
+}
+
 // Ordem de fallback: Gemini (principal) -> Groq (backup 1) -> Anthropic Claude (backup 2) -> Cerebras (backup 3).
 async function callChatWithFallback(system, messages, options = {}) {
   let erroGemini;
   try {
+    logPromptDebug("Gemini", system, messages);
     const resposta = await callGemini(system, messages, options);
     console.log("Lider Amigão: resposta do provedor Gemini");
     return resposta;
@@ -491,6 +571,7 @@ async function callChatWithFallback(system, messages, options = {}) {
 
   let erroGroq;
   try {
+    logPromptDebug("Groq", system, messages);
     const resposta = await callGroq(system, messages, { json: true });
     console.log("Lider Amigão: resposta do provedor Groq");
     return resposta;
@@ -510,6 +591,7 @@ async function callChatWithFallback(system, messages, options = {}) {
 
   let erroClaude;
   try {
+    logPromptDebug("Anthropic", system, messages);
     const resposta = await callClaudeChat(system, messages, options);
     console.log("Lider Amigão: resposta do provedor Anthropic Claude");
     return resposta;
@@ -519,6 +601,7 @@ async function callChatWithFallback(system, messages, options = {}) {
   }
 
   try {
+    logPromptDebug("Cerebras", system, messages);
     const resposta = await callCerebras(system, messages, { json: true });
     console.log("Lider Amigão: resposta do provedor Cerebras");
     return resposta;
@@ -2445,7 +2528,7 @@ export default function App() {
       // operador tiver colado/enviado manualmente o texto na aba Regras, ainda buscamos nele.
       const temConvencaoEstruturada = regrasCondominio.some((r) => r.fonte === "Convenção");
       const trechoRelevanteConvencao =
-        !temConvencaoEstruturada && convencao ? encontrarTrechoRegulamento(convencao, q, { exigirNumeros: true }) : null;
+        !temConvencaoEstruturada ? trechoConvencaoParaPergunta(convencao, q) : null;
       // Nome do operador (quem sempre faz a ronda), vindo do perfil cadastrado na aba Turno.
       // Sem isso, o assistente confunde "quem fala com você agora" com "quem faz a ronda" —
       // ex: se o operador diz "estou com o Fernando", o assistente não pode dizer que é o
@@ -2613,7 +2696,7 @@ export default function App() {
         // Mesma busca da Convenção manual (convencao_texto) que vai pro prompt da IA.
         const temConvencaoEstruturada = regrasCondominio.some((r) => r.fonte === "Convenção");
         const trechoConvencao =
-          !temConvencaoEstruturada && convencao ? encontrarTrechoRegulamento(convencao, q, { exigirNumeros: true }) : null;
+          !temConvencaoEstruturada ? trechoConvencaoParaPergunta(convencao, q) : null;
         const trechos = [
           ...(trechoConvencao ? [`📖 *Convenção*\n${trechoConvencao}`] : []),
           ...artigos.map((a) => `📖 *${citacaoCurta(a)}*\n${a.texto}`),
