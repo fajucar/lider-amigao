@@ -146,11 +146,17 @@ function normalizarTexto(texto) {
     .toLowerCase();
 }
 
-function encontrarTrechoRegulamento(regulamento, ocorrencia) {
+// exigirNumeros: na Convenção, "vagas do apto 238" só serve se o trecho tiver o 238 — senão a
+// linha de outro apartamento com "vaga/apartamento/torre" ganharia. No RI fica desligado: um
+// número citado numa ocorrência não aparece no texto do regulamento.
+function encontrarTrechoRegulamento(regulamento, ocorrencia, { exigirNumeros = false } = {}) {
   const linhas = regulamento.split(/\r?\n/).map((linha) => linha.trim()).filter(Boolean);
   const tokensOriginais = normalizarTexto(ocorrencia)
     .split(/[^a-z0-9]+/)
     .filter((token) => token.length >= 3 && !PALAVRAS_IGNORADAS_REGULAMENTO.has(token));
+  const numeros = exigirNumeros
+    ? [...new Set(normalizarTexto(ocorrencia).match(/\d{2,}/g) || [])].map((n) => new RegExp(`(^|\\D)${n}(\\D|$)`))
+    : [];
   const aliases = {
     barulho: ["silencio", "ruido"],
     carro: ["veiculo", "estacionamento", "vaga"],
@@ -169,10 +175,12 @@ function encontrarTrechoRegulamento(regulamento, ocorrencia) {
   let melhor = { indice: -1, pontos: 0 };
   linhas.forEach((_, indice) => {
     const texto = normalizarTexto(linhas.slice(indice, indice + JANELA).join(" "));
+    if (!numeros.every((re) => re.test(texto))) return;
     const pontos = tokens.reduce((total, token) => total + (texto.includes(token) ? 1 : 0), 0);
     if (pontos > melhor.pontos) melhor = { indice, pontos };
   });
-  const minimoDeSinais = tokensOriginais.length >= 2 ? 2 : 1;
+  // Com o número batido, uma linha de tabela ("238 | T2 | 45 e 46") já basta.
+  const minimoDeSinais = numeros.length || tokensOriginais.length < 2 ? 1 : 2;
   if (melhor.pontos < minimoDeSinais) return null;
 
   const inicio = Math.max(0, melhor.indice - 2);
@@ -419,7 +427,7 @@ async function callClaudeChat(system, messages, options = {}) {
       signal: controller.signal,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-haiku-4-5-20251001",
         max_tokens: 450,
         system,
         messages: messages.map((m) => ({
@@ -445,8 +453,8 @@ async function callClaudeVision(system, imageDataUrl, text) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 450,
+      model: "claude-sonnet-5",
+      max_tokens: 2000,
       system,
       messages: [{
         role: "user",
@@ -2181,7 +2189,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         signal: AbortSignal.timeout(180000),
         body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
+          model: "claude-sonnet-5",
           max_tokens: 16000,
           messages: [
             {
@@ -2271,7 +2279,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         signal: AbortSignal.timeout(180000),
         body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
+          model: "claude-sonnet-5",
           max_tokens: 16000,
           messages: [
             {
@@ -2437,7 +2445,7 @@ export default function App() {
       // operador tiver colado/enviado manualmente o texto na aba Regras, ainda buscamos nele.
       const temConvencaoEstruturada = regrasCondominio.some((r) => r.fonte === "Convenção");
       const trechoRelevanteConvencao =
-        !temConvencaoEstruturada && convencao ? encontrarTrechoRegulamento(convencao, q) : null;
+        !temConvencaoEstruturada && convencao ? encontrarTrechoRegulamento(convencao, q, { exigirNumeros: true }) : null;
       // Nome do operador (quem sempre faz a ronda), vindo do perfil cadastrado na aba Turno.
       // Sem isso, o assistente confunde "quem fala com você agora" com "quem faz a ronda" —
       // ex: se o operador diz "estou com o Fernando", o assistente não pode dizer que é o
@@ -2602,14 +2610,19 @@ export default function App() {
         // artigos — senão o "achado" é só palavra genérica e não responde a pergunta.
         const artigos = montarContextoRegras(q, regrasCondominio, { limite: 3 }).artigos
           .filter((a) => a.pontos >= Math.log(3));
-        if (!artigos.length) {
+        // Mesma busca da Convenção manual (convencao_texto) que vai pro prompt da IA.
+        const temConvencaoEstruturada = regrasCondominio.some((r) => r.fonte === "Convenção");
+        const trechoConvencao =
+          !temConvencaoEstruturada && convencao ? encontrarTrechoRegulamento(convencao, q, { exigirNumeros: true }) : null;
+        const trechos = [
+          ...(trechoConvencao ? [`📖 *Convenção*\n${trechoConvencao}`] : []),
+          ...artigos.map((a) => `📖 *${citacaoCurta(a)}*\n${a.texto}`),
+        ];
+        if (!trechos.length) {
           mensagem = `${mensagem}\n\nNão encontrei isso no regulamento. Tenta reformular a pergunta ou chama o síndico.`;
         } else {
-          const trechos = artigos
-            .map((a) => `📖 *${citacaoCurta(a)}*\n${a.texto}`)
-            .join("\n\n");
           mensagem =
-            `${mensagem}\n\nMas achei isto direto no regulamento (busca local, sem IA):\n\n${trechos}`;
+            `${mensagem}\n\nMas achei isto direto no regulamento (busca local, sem IA):\n\n${trechos.join("\n\n")}`;
         }
       }
 
