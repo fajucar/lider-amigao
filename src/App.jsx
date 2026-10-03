@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import regrasCondominio from "./data/regras.json";
+import vagasCadastro from "./data/vagas.json";
 import { montarContextoRegras, citacaoCurta, buscarArtigosRelevantes } from "./lib/buscaRegras.js";
 import { montarSystemPrompt } from "./config/promptAssistente.js";
 
@@ -234,6 +235,117 @@ function buscarNoRegulamento(regulamento, consulta) {
   return resultados;
 }
 
+// Cadastro de vagas (src/data/vagas.json): as 680 vagas do PDF "Cadastro de Vagas" (Convenção,
+// Cap. X, item 10.2.4), uma por registro { vaga, tamanho, torre, apto, pavimento }. É a fonte de
+// verdade de "de quem é a vaga" / "quais as vagas do apto": vem pronta da tabela, sem depender de
+// a IA (ou uma busca em texto) interpretar a convenção. Número de vaga não se repete.
+const FONTE_CADASTRO_VAGAS = "Cadastro de vagas da Convenção (Cap. X, item 10.2.4)";
+const TAMANHO_VAGA = { P: "pequena", M: "média", G: "grande" };
+
+function descreverVaga(v) {
+  return `vaga ${v.vaga} (${TAMANHO_VAGA[v.tamanho] || v.tamanho}), ${v.pavimento}`;
+}
+
+function vagasDoApto(apto, torre) {
+  return vagasCadastro.filter((v) => v.apto === apto && (torre == null || v.torre === torre)).sort((a, b) => a.vaga - b.vaga);
+}
+
+function torreDaPergunta(perguntaNorm) {
+  const m = perguntaNorm.match(/\btorre\s*(\d+)\b|\bt\s?(\d+)\b/);
+  return m ? m[1] || m[2] : null;
+}
+
+// Números de vaga citados na pergunta: "a vaga 14 e de qual apto", "vagas 13 e 14".
+function vagasDaPergunta(perguntaNorm) {
+  return [...perguntaNorm.matchAll(/\bvagas?\s*(?:n\W?\s*)?(\d+(?:\s*(?:,|e)\s*\d+)*)/g)].flatMap((m) => m[1].match(/\d+/g));
+}
+
+// Apartamento citado na pergunta: "apartamento 238", "apto 87", "vagas do 238".
+function aptoDaPergunta(perguntaNorm) {
+  const m =
+    perguntaNorm.match(/\b(?:apartamento|apto|ap|unidade|unid)\.?\s*(?:n\W?\s*)?(\d+)\b/) ||
+    perguntaNorm.match(/\bvagas?\s+(?:do|da)\s+(\d+)\b/);
+  return m ? Number(m[1]) : null;
+}
+
+// Vaga <-> apartamento responde DIRETO do cadastro, sem IA: essa resposta pode liberar acesso,
+// então não pode depender da IA interpretar nada. A 1ª linha é a resposta completa (é a que vai
+// pra voz). Retorna null quando a pergunta não é desse tipo (segue o fluxo normal com IA).
+function respostaVagaDireta(pergunta) {
+  const norm = normalizarTexto(pergunta);
+  const torreTxt = torreDaPergunta(norm);
+  const torre = torreTxt ? Number(torreTxt) : null;
+  const apto = aptoDaPergunta(norm);
+  const vagas = [...new Set(vagasDaPergunta(norm).map(Number))];
+  const fonte = `📖 ${FONTE_CADASTRO_VAGAS}`;
+
+  // "Quais são as vagas do apartamento 238 [Torre 2]?" (sem número de vaga na pergunta)
+  if (apto != null && !vagas.length && /\bvagas?\b/.test(norm)) {
+    const todas = vagasDoApto(apto, null);
+    const torresDoApto = [...new Set(todas.map((v) => v.torre))].sort();
+    const listar = (lista) => lista.map((v) => `• ${descreverVaga(v)}`).join("\n");
+    if (!todas.length) {
+      return `Não encontrei o apartamento ${apto} no cadastro de vagas. Não vou indicar vaga sem o dado: confira com a administração.\n${fonte}`;
+    }
+    if (torre != null) {
+      const daTorre = vagasDoApto(apto, torre);
+      if (!daTorre.length) {
+        return `Não encontrei o apartamento ${apto} na Torre ${torre} no cadastro de vagas. No cadastro, o apartamento ${apto} existe só na Torre ${torresDoApto.join(" e na Torre ")}.\n${fonte}`;
+      }
+      return `O apartamento ${apto} da Torre ${torre} tem ${daTorre.length === 1 ? "a vaga" : "as vagas"} ${daTorre.map((v) => v.vaga).join(" e ")}.\n${listar(daTorre)}\n${fonte}`;
+    }
+    if (torresDoApto.length > 1) {
+      return (
+        `Existe apartamento ${apto} nas Torres ${torresDoApto.join(" e ")}. De qual torre é?\n` +
+        torresDoApto.map((t) => `Torre ${t}:\n${listar(vagasDoApto(apto, t))}`).join("\n") +
+        `\n${fonte}`
+      );
+    }
+    return `O apartamento ${apto} da Torre ${torresDoApto[0]} tem ${todas.length === 1 ? "a vaga" : "as vagas"} ${todas.map((v) => v.vaga).join(" e ")}.\n${listar(todas)}\n${fonte}`;
+  }
+
+  // "A vaga 14 é de qual apartamento?" / "de quem é a vaga 532?" / "onde fica a vaga 1?"
+  // e a confirmação "a vaga 14 é da torre 2?" / "a vaga 14 é do apto 87?" (responde sim/não).
+  const perguntaDono = /\b(qual|que|quem|onde)\b/.test(norm) &&
+    /\b(apto|apartamento|ap|unidade|quem|dono|morador|torre|pavimento|andar|fica)\b/.test(norm);
+  // Só "é/pertence ao/da ..." conta como confirmação — "pode estacionar na vaga 14 da torre 1?" não.
+  const confirmacao = (torre != null || apto != null) &&
+    /\b(e|eh|sao|pertence|pertencem)\s+(?:mesmo\s+)?(?:da|do|ao|a|de)\s+(?:torre|apartamento|apto|ap|unidade)\b/.test(norm);
+  if (!vagas.length || !(perguntaDono || confirmacao)) return null;
+  const respostas = vagas.map((numero) => {
+    const v = vagasCadastro.find((x) => x.vaga === numero);
+    if (!v) return `Não existe vaga ${numero} no cadastro (as vagas vão da 1 à ${vagasCadastro.length}). Não vou indicar apartamento sem o dado.`;
+    const doApto = vagasDoApto(v.apto, v.torre).map((x) => x.vaga);
+    const outras = doApto.length > 1 ? ` O apartamento tem as vagas ${doApto.join(" e ")}.` : "";
+    const bateTorre = torre == null || torre === v.torre;
+    const bateApto = apto == null || apto === v.apto;
+    const citado = [apto != null && `do apartamento ${apto}`, torre != null && `da Torre ${torre}`].filter(Boolean).join(" ");
+    const veredito = confirmacao
+      ? bateTorre && bateApto ? "Sim. " : `Não, a vaga ${numero} não é ${citado}. `
+      : !bateTorre ? `A vaga ${numero} não é da Torre ${torre}. ` : "";
+    return `${veredito}A vaga ${numero} é do apartamento ${v.apto} da Torre ${v.torre}, no ${v.pavimento} (vaga ${TAMANHO_VAGA[v.tamanho] || v.tamanho}).${outras}`;
+  });
+  return `${respostas.join("\n")}\n${fonte}`;
+}
+
+// Bloco do cadastro de vagas pro prompt da IA, quando a pergunta cita vaga/apto mas não é uma
+// consulta direta (ex.: "pode estacionar moto na vaga 14?").
+function blocoCadastroVagas(pergunta) {
+  const norm = normalizarTexto(pergunta);
+  const torreTxt = torreDaPergunta(norm);
+  const apto = aptoDaPergunta(norm);
+  const linhas = [
+    ...[...new Set(vagasDaPergunta(norm).map(Number))].map((n) => {
+      const v = vagasCadastro.find((x) => x.vaga === n);
+      return v ? `Vaga ${v.vaga}: apartamento ${v.apto}, Torre ${v.torre}, ${v.pavimento}, tamanho ${TAMANHO_VAGA[v.tamanho]}` : `Vaga ${n}: NÃO EXISTE no cadastro (não indique apartamento).`;
+    }),
+    ...(apto != null
+      ? vagasDoApto(apto, torreTxt ? Number(torreTxt) : null).map((v) => `Apartamento ${v.apto}, Torre ${v.torre}: ${descreverVaga(v)}`)
+      : []),
+  ];
+  return linhas.length ? `CADASTRO DE VAGAS (fonte oficial, use exatamente estes dados):\n${linhas.join("\n")}` : null;
+}
+
 // Trecho da Convenção pro chat. Pergunta com número de apartamento ("vagas do 238 torre 2") usa
 // a mesma busca da caixa "Buscar vaga / apartamento" (buscarNoRegulamento), que traz TODAS as
 // linhas — o mesmo número existe em mais de uma torre — e filtra pela torre se ela foi dita.
@@ -242,13 +354,15 @@ function buscarNoRegulamento(regulamento, consulta) {
 function trechoConvencaoParaPergunta(convencao, pergunta) {
   if (!convencao) return null;
   const perguntaNorm = normalizarTexto(pergunta);
-  const torre = perguntaNorm.match(/\btorre\s*(\d+)\b|\bt\s?(\d+)\b/);
-  const numeroTorre = torre ? torre[1] || torre[2] : null;
-  // Números de 2+ dígitos que não são o da torre: "apartamento 238 torre 2" -> ["238"].
+  const numeroTorre = torreDaPergunta(perguntaNorm);
+  // Número de vaga fica de fora: vaga é respondida pelo cadastro (blocoCadastroVagas).
+  const vagasPerg = vagasDaPergunta(perguntaNorm);
+  // Números de 2+ dígitos que não são o da torre nem de vaga: "apartamento 238 torre 2" -> ["238"].
   const numeros = [...new Set(
     [...perguntaNorm.matchAll(/(^|\D)(\d{2,})(?!\d)/g)]
       .filter((m) => !/(torre|\bt)\s*$/.test(perguntaNorm.slice(0, m.index + m[1].length)))
       .map((m) => m[2])
+      .filter((n) => !vagasPerg.includes(n))
   )];
   if (!numeros.length) return encontrarTrechoRegulamento(convencao, pergunta, { exigirNumeros: true });
 
@@ -278,7 +392,7 @@ function trechoConvencaoParaPergunta(convencao, pergunta) {
   }
   if (!resultados.some((r) => r.achados.length)) return null;
 
-  return resultados
+  const blocoUnidades = resultados
     .filter((r) => r.achados.length)
     .map(({ numero, achados }) => {
       const texto = achados
@@ -295,6 +409,7 @@ function trechoConvencaoParaPergunta(convencao, pergunta) {
         : texto;
     })
     .join("\n\n");
+  return blocoUnidades;
 }
 
 function destacarTermos(linhaOriginal, termos) {
@@ -512,7 +627,6 @@ async function callClaudeChat(system, messages, options = {}) {
 }
 
 async function callClaudeVision(system, imageDataUrl, text) {
-  logPromptDebug("Anthropic (foto)", system, [{ content: text }]);
   const res = await fetch("/api/anthropic/v1/messages", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -541,26 +655,10 @@ async function callClaudeVision(system, imageDataUrl, text) {
   return data.content?.filter((item) => item.type === "text").map((item) => item.text).join("\n") || "";
 }
 
-// DEBUG TEMPORÁRIO: mostra o que vai pra IA e se o trecho da Convenção está no prompt.
-const MARCA_SECAO_CONVENCAO = "TRECHO DA CONVENÇÃO DO CONDOMÍNIO RELACIONADO A ESTA MENSAGEM";
-function logPromptDebug(provedor, system, messages) {
-  const i = system.indexOf(MARCA_SECAO_CONVENCAO);
-  const secaoConvencao = i >= 0 ? system.slice(system.indexOf("\n", i) + 1) : null;
-  console.log(`[DEBUG prompt → ${provedor}]`, {
-    tamanhoPrompt: system.length,
-    inicioPrompt: system.slice(0, 500),
-    secaoConvencaoPresente: i >= 0,
-    trechoConvencao: secaoConvencao,
-    contem238: secaoConvencao ? /(^|\D)238(\D|$)/.test(secaoConvencao) : false,
-    ultimaMensagem: messages?.[messages.length - 1]?.content,
-  });
-}
-
 // Ordem de fallback: Gemini (principal) -> Groq (backup 1) -> Anthropic Claude (backup 2) -> Cerebras (backup 3).
 async function callChatWithFallback(system, messages, options = {}) {
   let erroGemini;
   try {
-    logPromptDebug("Gemini", system, messages);
     const resposta = await callGemini(system, messages, options);
     console.log("Lider Amigão: resposta do provedor Gemini");
     return resposta;
@@ -571,7 +669,6 @@ async function callChatWithFallback(system, messages, options = {}) {
 
   let erroGroq;
   try {
-    logPromptDebug("Groq", system, messages);
     const resposta = await callGroq(system, messages, { json: true });
     console.log("Lider Amigão: resposta do provedor Groq");
     return resposta;
@@ -591,7 +688,6 @@ async function callChatWithFallback(system, messages, options = {}) {
 
   let erroClaude;
   try {
-    logPromptDebug("Anthropic", system, messages);
     const resposta = await callClaudeChat(system, messages, options);
     console.log("Lider Amigão: resposta do provedor Anthropic Claude");
     return resposta;
@@ -601,7 +697,6 @@ async function callChatWithFallback(system, messages, options = {}) {
   }
 
   try {
-    logPromptDebug("Cerebras", system, messages);
     const resposta = await callCerebras(system, messages, { json: true });
     console.log("Lider Amigão: resposta do provedor Cerebras");
     return resposta;
@@ -2511,6 +2606,17 @@ export default function App() {
     setStatusVoz("IA processando...");
 
     try {
+      // Vaga <-> apartamento é respondido direto do cadastro de vagas, sem IA (ver respostaVagaDireta).
+      const respostaVaga = foto ? null : respostaVagaDireta(q);
+      if (respostaVaga) {
+        setChat([...novo, { role: "assistant", content: respostaVaga }]);
+        setAba("consultar");
+        setStatusVoz("");
+        if (audioAtivoRef.current) falarTexto(respostaVaga.split("\n")[0]);
+        else if (modoVivaVozRef.current) setTimeout(() => iniciarGravacao({ automatico: true }), 500);
+        return;
+      }
+
       // Não embutimos o documento inteiro no prompt: buscamos localmente (sem gastar token) só
       // os artigos mais relevantes pra esta mensagem, em src/data/regras.json (RI + Convenção já
       // extraídos dos PDFs e estruturados por capítulo/artigo), e mandamos só isso pra IA — com a
@@ -2528,7 +2634,8 @@ export default function App() {
       // operador tiver colado/enviado manualmente o texto na aba Regras, ainda buscamos nele.
       const temConvencaoEstruturada = regrasCondominio.some((r) => r.fonte === "Convenção");
       const trechoRelevanteConvencao =
-        !temConvencaoEstruturada ? trechoConvencaoParaPergunta(convencao, q) : null;
+        [blocoCadastroVagas(q), !temConvencaoEstruturada ? trechoConvencaoParaPergunta(convencao, q) : null]
+          .filter(Boolean).join("\n\n") || null;
       // Nome do operador (quem sempre faz a ronda), vindo do perfil cadastrado na aba Turno.
       // Sem isso, o assistente confunde "quem fala com você agora" com "quem faz a ronda" —
       // ex: se o operador diz "estou com o Fernando", o assistente não pode dizer que é o
@@ -2696,7 +2803,8 @@ export default function App() {
         // Mesma busca da Convenção manual (convencao_texto) que vai pro prompt da IA.
         const temConvencaoEstruturada = regrasCondominio.some((r) => r.fonte === "Convenção");
         const trechoConvencao =
-          !temConvencaoEstruturada ? trechoConvencaoParaPergunta(convencao, q) : null;
+          [blocoCadastroVagas(q), !temConvencaoEstruturada ? trechoConvencaoParaPergunta(convencao, q) : null]
+            .filter(Boolean).join("\n\n") || null;
         const trechos = [
           ...(trechoConvencao ? [`📖 *Convenção*\n${trechoConvencao}`] : []),
           ...artigos.map((a) => `📖 *${citacaoCurta(a)}*\n${a.texto}`),
